@@ -71,10 +71,11 @@ def GetTroveLocations():
         library_folders = [
             Path(v["path"]).joinpath("steamapps\common\Trove\Games\Trove")
             for v in config["libraryfolders"].values()
+            if isinstance(v, dict)
         ]
         servers = ["Live", "PTS"]
-        for server in servers:
-            for library in library_folders:
+        for library in library_folders:
+            for server in servers:
                 game_path = library.joinpath(server)
                 exe_path = game_path.joinpath("Trove.exe")
                 if exe_path.exists():

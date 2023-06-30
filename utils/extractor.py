@@ -9,6 +9,7 @@ from typing import Generator, Optional
 from binary_reader import BinaryReader
 from copy import copy
 from hashlib import md5
+import shutil
 
 
 archive_id = re.compile(r"^archive(\d+)")
@@ -79,11 +80,17 @@ class TroveFile:
             self._status = FileStatus.changed
         return self.status
 
+    def copy_old(self, opath: Path, gpath: Path, path: Path):
+        path_to_get = self.extract_to_path(opath, gpath)
+        if not path_to_get.exists():
+            return
+        path_to_save = self.extract_to_path(opath, path)
+        path_to_save.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(path_to_get, path_to_save)
+
     def save(self, opath: Path, path: Path):
         path_to_save = self.extract_to_path(opath, path)
-        parent = path_to_save.parent
-        if not parent.exists():
-            parent.mkdir(parents=True, exist_ok=True)
+        path_to_save.parent.mkdir(parents=True, exist_ok=True)
         with open(path_to_save, "wb") as f:
             f.write(self.content)
 

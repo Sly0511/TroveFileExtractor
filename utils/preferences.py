@@ -20,6 +20,7 @@ class AccentColor(Enum):
     yellow = "YELLOW"
     amber = "AMBER"
     orange = "ORANGE"
+
     brown = "BROWN"
 
     def __str__(self):
@@ -40,6 +41,7 @@ class Directories(BaseModel):
 
 
 class Preferences(BaseModel):
+    path: Path
     theme: ThemeMode = Field(default=ThemeMode.DARK)
     accent_color: AccentColor = AccentColor.amber
     advanced_mode: bool = False
@@ -50,7 +52,7 @@ class Preferences(BaseModel):
     @classmethod
     def load_from_json(cls, path: Path):
         if not path.exists():
-            pref = cls()
+            pref = cls(path=path)
             with open(path, "w+") as f:
                 f.write(pref.json(indent=4))
             return pref
@@ -58,12 +60,11 @@ class Preferences(BaseModel):
             data = loads(path.read_text())
             return cls.parse_obj(data)
         except Exception as e:
-            pref = cls()
+            pref = cls(path=path)
             with open(path, "w+") as f:
                 f.write(pref.json(indent=4))
             return pref
 
     def save(self):
-        # TODO: Dynamic path saving
-        with open("preferences.json", "w+") as f:
+        with open(self.path, "w+") as f:
             f.write(self.json(indent=4))

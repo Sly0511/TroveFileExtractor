@@ -3,3 +3,4 @@ humanize
 pydantic
 flet
 vdf
+pyinstaller

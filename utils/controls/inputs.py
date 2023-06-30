@@ -176,7 +176,6 @@ class PathField(TextField):
         path = Path(event.control.value)
         if not path.exists():
             return False
-
         return True
 
     @property
