@@ -2,6 +2,7 @@ import asyncio
 import json
 from pathlib import Path
 from datetime import datetime
+import traceback
 
 from flet import (
     ResponsiveRow,
@@ -32,6 +33,7 @@ from utils.controls import PathField
 from utils.extractor import find_changes, find_all_indexes
 from utils.trove import GetTroveLocations
 from utils.functions import throttle
+from time import perf_counter
 
 
 class Interface:
@@ -39,6 +41,7 @@ class Interface:
         self.page = page
         self.tfi_list = []
         self.main = ResponsiveRow(alignment=MainAxisAlignment.START)
+        self.cancel_extraction = False
         self.setup_controls()
 
     def setup_controls(self):
@@ -101,6 +104,12 @@ class Interface:
             on_click=self.extract_all,
             disabled=True,
             col=6
+        )
+        self.cancel_extraction_button = ElevatedButton(
+            "Cancel extraction",
+            on_click=self.cancel_ongoing_extraction,
+            visible=False,
+            col=2
         )
         self.directory_dropdown = Dropdown(
             value=(
@@ -257,13 +266,18 @@ class Interface:
                     ],
                     expand=False
                 ),
-                ProgressBar(
-                    height=30,
-                    value=0
+                ResponsiveRow(
+                    controls=[
+                        ProgressBar(
+                            height=30,
+                            value=0,
+                            col=10
+                        ),
+                        self.cancel_extraction_button
+                    ]
                 )
             ],
-            horizontal_alignment="center",
-            disabled=True
+            horizontal_alignment="center"
         )
         self.select_all_button = ElevatedButton(
             "Select all",
@@ -314,14 +328,23 @@ class Interface:
             ),
         ]
 
-    async def select_all(self, event):
+    async def cancel_ongoing_extraction(self, _):
+        self.cancel_extraction = True
+
+    async def select_all(self, _):
         for row in self.directory_list.rows:
             row.selected = True
+        self.extract_selected_button.disabled = False
+        selected_size = sum([f["size"] for r in self.directory_list.rows for f in await r.data.files_list if r.selected])
+        self.extract_selected_button.text = f"Extract Selected [{naturalsize(selected_size, gnu=True)}]"
         await self.page.update_async()
 
-    async def unselect_all(self, event):
+    async def unselect_all(self, _):
         for row in self.directory_list.rows:
             row.selected = False
+        self.extract_selected_button.disabled = True
+        selected_size = sum([f["size"] for r in self.directory_list.rows for f in await r.data.files_list if r.selected])
+        self.extract_selected_button.text = f"Extract Selected [{naturalsize(selected_size, gnu=True)}]"
         await self.page.update_async()
 
     @throttle
@@ -350,7 +373,7 @@ class Interface:
         await self.page.update_async()
         await asyncio.sleep(0.5)
         self.directory_list.rows.sort(
-            key=lambda x: sum([f["size"] for f in x.data.files_list]),
+            key=lambda x: x.cells[2].data,
             reverse=not event.ascending
         )
         self.directory_list.sort_ascending = event.ascending
@@ -375,7 +398,7 @@ class Interface:
         file_picker = FilePicker(data=event.control.data, on_result=self.set_directory)
         self.page.overlay.append(file_picker)
         await self.page.update_async()
-        await file_picker.get_directory_path_async(initial_directory=event.control.data)
+        await file_picker.get_directory_path_async(initial_directory=Path(event.control.data).parent)
 
     async def set_directory(self, event):
         if event.path is None:
@@ -400,19 +423,11 @@ class Interface:
                     self.page.snack_bar.bgcolor = "red"
                     self.page.snack_bar.open = True
                     return await self.page.update_async()
-            self.directory_dropdown.value = Path(event.path)
+            trove_path = Path(event.path)
+            self.directory_dropdown.value = trove_path if trove_path in [x[1] for x in self.trove_locations] else "none"
         setattr(self.locations, event.control.data, Path(event.path))
         control = getattr(self, event.control.data)
         setattr(control, "value", Path(event.path))
-        self.page.preferences.save()
-        await self.page.update_async()
-
-    async def set_text_directory(self, event):
-        if not event.control.value:
-            return
-        setattr(self.locations, event.control.data, Path(event.control.value))
-        control = getattr(self, event.control.data)
-        setattr(control, "value", Path(event.control.value))
         self.page.preferences.save()
         await self.page.update_async()
 
@@ -421,11 +436,16 @@ class Interface:
         old_path = Path(self.extract_from.value)
         self.extract_from.value = str(new_path)
         for field in self.locations.__fields__:
+            if field == "extract_from":
+                continue
             path = getattr(self.locations, field)
-            if old_path <= path:
-                set_path = new_path.joinpath(path.relative_to(old_path))
-                setattr(self.locations, field, set_path)
-                setattr(getattr(self, field), "value", set_path)
+            try:
+                final_path = new_path.joinpath(path.relative_to(old_path))
+                print(final_path)
+                setattr(self.locations, field, final_path)
+                setattr(getattr(self, field), "value", final_path)
+            except ValueError:
+                continue
         self.page.preferences.save()
         await self.page.update_async()
 
@@ -455,11 +475,12 @@ class Interface:
         selected_indexes = [r.data for r in self.directory_list.rows if r.selected]
         changes = [f for f in self.changed_files if f.archive.index in selected_indexes]
         changes_size = sum([f.size for f in changes])
-        selected_size = sum([f["size"] for r in self.directory_list.rows for f in r.data.files_list if r.selected])
-        all_size = sum([f["size"] for r in self.directory_list.rows for f in r.data.files_list])
+        selected_size = sum([f["size"] for r in self.directory_list.rows for f in await r.data.files_list if r.selected])
+        all_size = sum([f["size"] for r in self.directory_list.rows for f in await r.data.files_list])
         self.extract_changes_button.text = f"Extract Changes [{naturalsize(changes_size, gnu=True)}]"
         self.extract_selected_button.text = f"Extract Selected [{naturalsize(selected_size, gnu=True)}]"
         self.extract_all_button.text = f"Extract All [{naturalsize(all_size, gnu=True)}]"
+        self.extract_selected_button.disabled = not bool([r for r in self.directory_list.rows if r.selected])
         await self.page.update_async()
 
     async def refresh_directories(self, _):
@@ -483,13 +504,13 @@ class Interface:
             if self.page.preferences.performance_mode:
                 hashes_path = self.locations.extract_from.joinpath("hashes.json")
                 if hashes_path.exists():
-                    self.hashes = json.loads(hashes_path.read_text())
+                    try:
+                        self.hashes = json.loads(hashes_path.read_text())
+                    except json.JSONDecodeError:
+                        print("Failed to load hashes, malformed file.")
             self.changed_files = []
-            indexes = [[index, len(index.files_list), 0] for index in find_all_indexes(self.locations.extract_from, self.hashes, False)]
-            for i, file in enumerate(
-                find_changes(
-                    self.locations.extract_from, self.locations.extract_to, self.hashes)
-            ):
+            indexes = [[index, len(await index.files_list), 0] async for index in find_all_indexes(self.locations.extract_from, self.hashes, False)]
+            async for file in find_changes(self.locations.extract_from, self.locations.extract_to, self.hashes):
                 self.changed_files.append(file)
             if self.changed_files:
                 self.changed_files.sort(key=lambda x: [x.archive.index.path, x.path])
@@ -516,10 +537,11 @@ class Interface:
                             ),
                             DataCell(
                                 Text(
-                                    naturalsize(sum([f["size"] for f in index.files_list]), gnu=True),
+                                    naturalsize(sum([f["size"] for f in await index.files_list]), gnu=True),
                                     color="green" if changes_count else None,
                                     size=12
-                                )
+                                ),
+                                data=sum([f["size"] for f in await index.files_list])
                             ),
                             DataCell(
                                 Text(
@@ -579,14 +601,13 @@ class Interface:
             selected_indexes = [r.data for r in self.directory_list.rows if r.selected]
             changes = [f for f in self.changed_files if f.archive.index in selected_indexes]
             changes_size = sum([f.size for f in changes])
-            selected_size = sum([f["size"] for r in self.directory_list.rows for f in r.data.files_list if r.selected])
-            all_size = sum([f["size"] for r in self.directory_list.rows for f in r.data.files_list])
+            selected_size = sum([f["size"] for r in self.directory_list.rows for f in await r.data.files_list if r.selected])
+            all_size = sum([f["size"] for r in self.directory_list.rows for f in await r.data.files_list])
             self.extract_changes_button.text = f"Extract Changes [{naturalsize(changes_size, gnu=True)}]"
             self.extract_selected_button.text = f"Extract Selected [{naturalsize(selected_size, gnu=True)}]"
             self.extract_all_button.text = f"Extract All [{naturalsize(all_size, gnu=True)}]"
             self.metrics.controls[0].controls[1].value = naturalsize(sum([f.size for f in self.changed_files]), gnu=True)
-            self.extract_changes_button.disabled = False
-            self.extract_selected_button.disabled = False
+            self.extract_selected_button.disabled = not bool([r for r in self.directory_list.rows if r.selected])
             self.select_all_button.disabled = False
             self.unselect_all_button.disabled = False
             self.extract_all_button.disabled = False
@@ -598,7 +619,7 @@ class Interface:
             await self.page.update_async()
             self.refresh_lists.cancel()
         except Exception as e:
-            print(e)
+            print("".join(traceback.format_exception(type(e), e, e.__traceback__)))
 
     async def warn_advanced_mode(self):
         task_lines = [
@@ -694,71 +715,89 @@ class Interface:
 
     async def extract(self, event):
         self.page.dialog.open = False
-        self.main.disabled = True
+        self.main_controls.disabled = True
         await self.page.update_async()
         await asyncio.sleep(0.5)
         if event.control.data == "changes":
-            dated_folder = self.locations.changes_to.joinpath(datetime.now().strftime("%Y-%m-%d %H-%M-%S"))
-            old_changes = dated_folder.joinpath("old")
-            new_changes = dated_folder.joinpath("new")
-            dated_folder.mkdir(parents=True, exist_ok=True)
-            old_changes.mkdir(parents=True, exist_ok=True)
-            new_changes.mkdir(parents=True, exist_ok=True)
+            self.cancel_extraction_button.visible = False
+            if self.page.preferences.advanced_mode:
+                dated_folder = self.locations.changes_to.joinpath(datetime.now().strftime("%Y-%m-%d %H-%M-%S"))
+                old_changes = dated_folder.joinpath("old")
+                new_changes = dated_folder.joinpath("new")
+                dated_folder.mkdir(parents=True, exist_ok=True)
+                old_changes.mkdir(parents=True, exist_ok=True)
+                new_changes.mkdir(parents=True, exist_ok=True)
+                # This in case they want to re-run the extraction, possible
+                with open(old_changes.joinpath("hashes.json"), "w+") as f:
+                    f.write(json.dumps(self.hashes, indent=4))
             selected_indexes = [r.data for r in self.directory_list.rows if r.selected]
             changes = [f for f in self.changed_files if f.archive.index in selected_indexes]
             total = len(changes)
-            # This in case they want to re-run the extraction, possible
-            with open(old_changes.joinpath("hashes.json"), "w+") as f:
-                f.write(json.dumps(self.hashes, indent=4))
+            start = perf_counter()
             for i, file in enumerate(changes, 1):
-                old_pro = self.extraction_progress.controls[1].value
+                old_pro = self.extraction_progress.controls[1].controls[0].value
                 i += 1
                 if old_pro != (progress := round(i/total*100)/100):
-                    self.extraction_progress.controls[0].controls[0].value = f"[{round(progress * 100, 2)}%] Extracting changes:"
+                    elapsed = (perf_counter() - start)
+                    remaining = round(elapsed * (total / i - 1))
+                    self.extraction_progress.controls[0].controls[0].value = f"[{round(i / total * 100)}%] | Elapsed: {round(elapsed):>3}s | Estimated {remaining:>3}s remaining | Extracting {event.control.data}:\r"
                     self.extraction_progress.controls[0].controls[1].value = file.name
-                    self.extraction_progress.controls[1].value = progress
+                    self.extraction_progress.controls[1].controls[0].value = progress
                     await self.extraction_progress.update_async()
                     await asyncio.sleep(0.1)
                 if self.page.preferences.advanced_mode:
                     # Keep an old copy for comparisons
-                    file.copy_old(self.locations.extract_from, self.locations.extract_to, old_changes)
+                    await file.copy_old(self.locations.extract_from, self.locations.extract_to, old_changes)
                     # Add changes
-                    file.save(self.locations.extract_from, new_changes)
-                    # Save into extracted location
-                    file.save(self.locations.extract_from, self.locations.extract_to)
+                    await file.save(self.locations.extract_from, new_changes)
+                # Save into extracted location
+                await file.save(self.locations.extract_from, self.locations.extract_to)
                 index_relative_path = file.archive.index.path.relative_to(self.locations.extract_from)
                 archive_relative_path = file.archive.path.relative_to(self.locations.extract_from)
-                self.hashes[str(index_relative_path)] = file.archive.index.content_hash
-                self.hashes[str(archive_relative_path)] = file.archive.content_hash
-            with open(self.locations.extract_from.joinpath("hashes.json"), "w+") as f:
-                f.write(json.dumps(self.hashes, indent=4))
+                self.hashes[str(index_relative_path)] = await file.archive.index.content_hash
+                self.hashes[str(archive_relative_path)] = await file.archive.content_hash
         elif event.control.data in ["all", "selected"]:
+            self.cancel_extraction_button.visible = True
+            await self.cancel_extraction_button.update_async()
             if event.control.data == "all":
                 indexes = [r.data for r in self.directory_list.rows]
             elif event.control.data == "selected":
                 indexes = [r.data for r in self.directory_list.rows if r.selected]
-            number_of_files = sum([len(index.files_list) for index in indexes])
+            number_of_files = sum([len(await index.files_list) for index in indexes])
             i = 0
+            start = perf_counter()
             for index in indexes:
                 index_relative_path = index.path.relative_to(self.locations.extract_from)
-                self.hashes[str(index_relative_path)] = index.content_hash
+                self.hashes[str(index_relative_path)] = await index.content_hash
                 for archive in index.archives:
                     archive_relative_path = archive.path.relative_to(self.locations.extract_from)
-                    self.hashes[str(archive_relative_path)] = archive.content_hash
-                    for file in archive.files():
-                        old_pro = self.extraction_progress.controls[1].value
+                    self.hashes[str(archive_relative_path)] = await archive.content_hash
+                    async for file in archive.files():
+                        if self.cancel_extraction:
+                            self.cancel_extraction = False
+                            self.extraction_progress.controls[0].controls[0].value = "Extractor Idle"
+                            self.extraction_progress.controls[0].controls[1].value = ""
+                            self.extraction_progress.controls[1].controls[0].value = 0
+                            self.page.snack_bar.content.value = "Extraction Cancelled"
+                            self.page.snack_bar.bgcolor = "red"
+                            self.page.snack_bar.open = True
+                            return await self.page.update_async()
+                        old_pro = self.extraction_progress.controls[1].controls[0].value
                         i += 1
                         if old_pro != (progress := round(i/number_of_files*100)/100):
-                            self.extraction_progress.controls[0].controls[0].value = f"[{round(progress * 100, 2)}%] Extracting {event.control.data}:"
+                            elapsed = (perf_counter() - start)
+                            remaining = round(elapsed * (number_of_files / i - 1))
+                            self.extraction_progress.controls[0].controls[0].value = f"[{round(i / number_of_files * 100)}%] | Elapsed: {round(elapsed):>3}s | Estimated {remaining:>3}s remaining | Extracting {event.control.data}:\r"
                             self.extraction_progress.controls[0].controls[1].value = file.name
-                            self.extraction_progress.controls[1].value = progress
+                            self.extraction_progress.controls[1].controls[0].value = progress
                             await self.extraction_progress.update_async()
-                            await asyncio.sleep(0.1)
-                        file.save(self.locations.extract_from, self.locations.extract_to)
-            with open(self.locations.extract_from.joinpath("hashes.json"), "w+") as f:
-                f.write(json.dumps(self.hashes, indent=4))
+                        await file.save(self.locations.extract_from, self.locations.extract_to)
+        hashes_path = self.locations.extract_from.joinpath("hashes.json")
+        hashes_path.write_text(json.dumps(self.hashes, indent=4))
+        self.cancel_extraction_button.visible = True
         self.extraction_progress.controls[0].controls[0].value = "Extractor Idle"
         self.extraction_progress.controls[0].controls[1].value = ""
+        self.extraction_progress.controls[1].controls[0].value = 0
         self.page.snack_bar.content.value = "Extraction Complete"
         self.page.snack_bar.bgcolor = "green"
         self.page.snack_bar.open = True

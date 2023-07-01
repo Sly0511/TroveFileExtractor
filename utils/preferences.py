@@ -36,7 +36,6 @@ class DismissableContent(BaseModel):
 class Directories(BaseModel):
     extract_from: Optional[Path] = None
     extract_to: Optional[Path] = None
-    changes_from: Optional[Path] = None
     changes_to: Optional[Path] = None
 
 

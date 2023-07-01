@@ -2,15 +2,14 @@ from __future__ import annotations
 
 import re
 import zlib
+from copy import copy
 from enum import Enum
+from hashlib import md5
 from pathlib import Path
 from typing import Generator, Optional
 
+import aiofiles
 from binary_reader import BinaryReader
-from copy import copy
-from hashlib import md5
-import shutil
-
 
 archive_id = re.compile(r"^archive(\d+)")
 
@@ -50,18 +49,18 @@ class TroveFile:
             return "red"
 
     @property
-    def content_hash(self):
+    async def content_hash(self):
         if self._content is None:
-            _ = self.content
+            _ = await self.content
         return self._content_hash
 
     @property
-    def content(self):
+    async def content(self):
         if self._content is None:
-            reader = BinaryReader(self.archive.content)
+            reader = BinaryReader(await self.archive.content)
             reader.seek(self.offset)
             self._content = reader.read_bytes(self.size)
-            self._content_hash = md5(self.content).hexdigest()
+            self._content_hash = md5(self._content).hexdigest()
         return self._content
 
     def extracted_path(self, opath: Path, path: Path) -> Path:
@@ -70,29 +69,33 @@ class TroveFile:
     def extract_to_path(self, opath: Path, path: Path) -> Path:
         return path.joinpath(self.path.relative_to(opath))
 
-    def compare(self, opath: Path, path: Path) -> FileStatus:
+    async def compare(self, opath: Path, path: Path) -> FileStatus:
         extracted_file = self.extracted_path(opath, path)
         if not extracted_file.exists():
             self._status = FileStatus.added
-        elif self.content_hash == md5(extracted_file.read_bytes()).hexdigest():
-            self._status = FileStatus.unchanged
-        else:
-            self._status = FileStatus.changed
+
+        async with aiofiles.open(extracted_file, "rb") as f:
+            if await self.content_hash == md5(await f.read()).hexdigest():
+                self._status = FileStatus.unchanged
+            else:
+                self._status = FileStatus.changed
         return self.status
 
-    def copy_old(self, opath: Path, gpath: Path, path: Path):
+    async def copy_old(self, opath: Path, gpath: Path, path: Path):
         path_to_get = self.extract_to_path(opath, gpath)
         if not path_to_get.exists():
             return
         path_to_save = self.extract_to_path(opath, path)
         path_to_save.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy(path_to_get, path_to_save)
+        async with aiofiles.open(path_to_get, "rb") as old:
+            async with aiofiles.open(path_to_save, "wb") as new:
+                await new.write(old)
 
-    def save(self, opath: Path, path: Path):
+    async def save(self, opath: Path, path: Path):
         path_to_save = self.extract_to_path(opath, path)
         path_to_save.parent.mkdir(parents=True, exist_ok=True)
-        with open(path_to_save, "wb") as f:
-            f.write(self.content)
+        async with aiofiles.open(path_to_save, "wb") as f:
+            await f.write(await self.content)
 
 
 class TFArchive:
@@ -122,21 +125,22 @@ class TFArchive:
         return self.__str__()
 
     @property
-    def content_hash(self):
+    async def content_hash(self):
         if self._content is None:
-            _ = self.content
+            _ = await self.content
         return self._content_hash
 
     @property
-    def content(self):
+    async def content(self):
         if self._content is None:
             data = zlib.decompressobj(wbits=zlib.MAX_WBITS)
-            self._content = data.decompress(self.path.read_bytes())
-            self._content_hash = md5(self._content).hexdigest()
+            async with aiofiles.open(self.path, "rb") as f:
+                self._content = data.decompress(await f.read())
+                self._content_hash = md5(self._content).hexdigest()
         return self._content
 
-    def files(self) -> Generator[TroveFile]:
-        for file in self.index.files_list:
+    async def files(self) -> Generator[TroveFile]:
+        for file in await self.index.files_list:
             if file["archive_index"] == int(self):
                 copy_file = copy(file)
                 copy_file["archive"] = self
@@ -166,15 +170,16 @@ class TFIndex:
         return self.__str__()
 
     @property
-    def content_hash(self):
+    async def content_hash(self):
         if self._content is None:
-            _ = self.content
+            _ = await self.content
         return self._content_hash
 
     @property
-    def content(self):
+    async def content(self):
         if self._content is None:
-            self._content = self.path.read_bytes()
+            async with aiofiles.open(self.path, "rb") as f:
+                self._content = await f.read()
             self._content_hash = md5(self._content).hexdigest()
         return self._content
 
@@ -184,15 +189,15 @@ class TFIndex:
             yield TFArchive(self, archive)
 
     @property
-    def files_list(self) -> list[dict]:
+    async def files_list(self) -> list[dict]:
         if not self._files:
             self._files.extend(
-                list(self.get_files_list())
+                [x async for x in self.get_files_list()]
             )
         return self._files
 
-    def get_files_list(self) -> Generator[dict]:
-        reader = BinaryReader(self.content)
+    async def get_files_list(self) -> Generator[dict]:
+        reader = BinaryReader(await self.content)
         while reader.pos() < reader.size():
             file = dict()
             file["name"] = reader.read_str(ReadVarInt7Bit(reader, reader.pos()))
@@ -204,35 +209,35 @@ class TFIndex:
             yield file
 
 
-def find_all_indexes(path: Path, hashes: dict, track_changes=True) -> Generator[TFIndex]:
+async def find_all_indexes(path: Path, hashes: dict, track_changes=True) -> Generator[TFIndex]:
     for index_file in path.rglob("index.tfi"):
         index = TFIndex(index_file)
         if not track_changes:
             yield index
             continue
         hash = hashes.get(str(index.path.relative_to(path)))
-        if hash is None or index.content_hash != hash:
+        if hash is None or await index.content_hash != hash:
             yield index
 
 
-def find_all_archives(path: Path, hashes: dict) -> Generator[TFArchive]:
-    for index in find_all_indexes(path, hashes):
+async def find_all_archives(path: Path, hashes: dict) -> Generator[TFArchive]:
+    async for index in find_all_indexes(path, hashes):
         for archive in index.archives:
             opath = archive.path.relative_to(path)
             hash = hashes.get(opath)
-            if hash is None or archive.content_hash != hash:
+            if hash is None or await archive.content_hash != hash:
                 yield archive
 
 
-def find_all_files(path: Path, hashes: dict) -> Generator[TroveFile]:
-    for archive in find_all_archives(path, hashes):
-        for i, file in enumerate(archive.files()):
+async def find_all_files(path: Path, hashes: dict) -> Generator[TroveFile]:
+    async for archive in find_all_archives(path, hashes):
+        async for file in archive.files():
             yield file
 
 
-def find_changes(archive_path: Path, extracted_path: Path, hashes: dict) -> Generator[TroveFile]:
-    for file in find_all_files(archive_path, hashes):
-        if file.compare(archive_path, extracted_path) in [
+async def find_changes(archive_path: Path, extracted_path: Path, hashes: dict) -> Generator[TroveFile]:
+    async for file in find_all_files(archive_path, hashes):
+        if await file.compare(archive_path, extracted_path) in [
             FileStatus.added,
             FileStatus.changed
         ]:
