@@ -21,6 +21,7 @@ class Extractor:
         logs = app_data.joinpath("logs")
         logs.mkdir(parents=True, exist_ok=True)
         latest_log = logs.joinpath("latest.log")
+        latest_log.unlink(missing_ok=True)
         dated_log = logs.joinpath(datetime.now().strftime("%Y-%m-%d %H-%M-%S.log"))
         targets = (
             logging.StreamHandler(sys.stdout),

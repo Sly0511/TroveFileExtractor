@@ -32,7 +32,7 @@ from utils import tasks
 from utils.controls import PathField
 from utils.extractor import find_changes, find_all_indexes
 from utils.trove import GetTroveLocations
-from utils.functions import throttle
+from utils.functions import throttle, long_throttle
 from time import perf_counter
 
 
@@ -78,7 +78,12 @@ class Interface:
             on_change=self.avoid_text_edit,
             # on_submit=self.set_text_directory,
             disabled=not self.page.preferences.advanced_mode,
-            col=11
+            col=7
+        )
+        self.change_format = TextField(
+            value=self.page.preferences.changes_name_format,
+            on_change=self.set_changes_format,
+            col=4
         )
         self.changes_to_pick = IconButton(
             icons.FOLDER,
@@ -198,6 +203,7 @@ class Interface:
                                     controls=[
                                         self.changes_to_pick,
                                         self.changes_to,
+                                        self.change_format
                                     ],
                                     vertical_alignment="center"
                                 ),
@@ -328,6 +334,15 @@ class Interface:
             ),
         ]
 
+    @long_throttle
+    async def set_changes_format(self, event):
+        self.page.preferences.changes_name_format = event.control.value
+        self.page.snack_bar.content.value = "Changed the format for changes folder"
+        self.page.snack_bar.bgcolor = "green"
+        self.page.snack_bar.open = True
+        return await self.page.update_async()
+
+
     async def cancel_ongoing_extraction(self, _):
         self.cancel_extraction = True
 
@@ -435,13 +450,13 @@ class Interface:
         new_path = Path(event.control.value)
         old_path = Path(self.extract_from.value)
         self.extract_from.value = str(new_path)
+        await self.page.update_async()
         for field in self.locations.__fields__:
             if field == "extract_from":
                 continue
             path = getattr(self.locations, field)
             try:
                 final_path = new_path.joinpath(path.relative_to(old_path))
-                print(final_path)
                 setattr(self.locations, field, final_path)
                 setattr(getattr(self, field), "value", final_path)
             except ValueError:
@@ -721,7 +736,9 @@ class Interface:
         if event.control.data == "changes":
             self.cancel_extraction_button.visible = False
             if self.page.preferences.advanced_mode:
-                dated_folder = self.locations.changes_to.joinpath(datetime.now().strftime("%Y-%m-%d %H-%M-%S"))
+                dated_folder = self.locations.changes_to.joinpath(
+                    datetime.now().strftime(self.page.preferences.changes_name_format)
+                )
                 old_changes = dated_folder.joinpath("old")
                 new_changes = dated_folder.joinpath("new")
                 dated_folder.mkdir(parents=True, exist_ok=True)
@@ -750,6 +767,9 @@ class Interface:
                     await file.copy_old(self.locations.extract_from, self.locations.extract_to, old_changes)
                     # Add changes
                     await file.save(self.locations.extract_from, new_changes)
+                    metadata = {
+
+                    }
                 # Save into extracted location
                 await file.save(self.locations.extract_from, self.locations.extract_to)
                 index_relative_path = file.archive.index.path.relative_to(self.locations.extract_from)

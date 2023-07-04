@@ -45,6 +45,7 @@ class Preferences(BaseModel):
     accent_color: AccentColor = AccentColor.amber
     advanced_mode: bool = False
     performance_mode: bool = False
+    changes_name_format: str = "%Y-%m-%d %H-%M-%S"
     directories: Directories = Field(default_factory=Directories)
     dismissables: DismissableContent = Field(default_factory=DismissableContent)
 
