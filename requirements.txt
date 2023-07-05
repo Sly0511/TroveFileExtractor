@@ -1,7 +1,6 @@
 binary-reader
 humanize
-pydantic
+pydantic==1.10.11
 flet
 vdf
-pyinstaller
 aiofiles

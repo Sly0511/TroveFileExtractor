@@ -30,7 +30,7 @@ from humanize import naturalsize
 
 from utils import tasks
 from utils.controls import PathField
-from utils.extractor import find_changes, find_all_indexes
+from utils.extractor import find_all_indexes, FileStatus
 from utils.trove import GetTroveLocations
 from utils.functions import throttle, long_throttle
 from time import perf_counter
@@ -219,15 +219,8 @@ class Interface:
         )
         self.directory_progress = Row(
             controls=[
-                ProgressRing(),
-                Text("Loading directories...\nThis may take a minute")
-            ],
-            visible=False
-        )
-        self.files_progress = Row(
-            controls=[
-                ProgressRing(),
-                Text("Loading files...\nThis may take a minute")
+                Text("Loading files...\nThis may take a minute"),
+                ProgressBar(value=0, expand=True)
             ],
             visible=False
         )
@@ -325,7 +318,6 @@ class Interface:
             Column(
                 controls=[
                     Text("Changed/Added Files List", size=20),
-                    self.files_progress,
                     Column(controls=[self.files_list], height=475, scroll="auto")
                 ],
                 height=475,
@@ -511,7 +503,6 @@ class Interface:
             self.extract_selected_button.disabled = False
             self.directory_progress.visible = True
             self.directory_list.visible = False
-            self.files_progress.visible = True
             self.files_list.visible = False
             await self.page.update_async()
             await asyncio.sleep(0.5)
@@ -524,9 +515,35 @@ class Interface:
                     except json.JSONDecodeError:
                         print("Failed to load hashes, malformed file.")
             self.changed_files = []
-            indexes = [[index, len(await index.files_list), 0] async for index in find_all_indexes(self.locations.extract_from, self.hashes, False)]
-            async for file in find_changes(self.locations.extract_from, self.locations.extract_to, self.hashes):
-                self.changed_files.append(file)
+            indexes = []
+            i = 0
+            async for index in find_all_indexes(self.locations.extract_from, self.hashes, False):
+                indexes.append([index, len(await index.files_list), 0])
+            total_files = sum([index[1] for index in indexes])
+            for index, files_count, _ in indexes:
+                index_hash = self.hashes.get(str(index.path.relative_to(self.locations.extract_from)))
+                if index_hash is None or (await index.content_hash) != index_hash:
+                    for archive in index.archives:
+                        archive_hash = self.hashes.get(archive.path.relative_to(self.locations.extract_from))
+                        if archive_hash is None or (await archive.content_hash) != archive_hash:
+                            async for file in archive.files():
+                                i += 1
+                                if (
+                                    (
+                                        await file.compare(
+                                            self.locations.extract_from,
+                                            self.locations.extract_to
+                                        )
+                                    )
+                                    in [FileStatus.added, FileStatus.changed]
+                                ):
+                                    self.changed_files.append(file)
+                        else:
+                            i += len([f for f in archive.index.files_list() if int(f["archive_index"]) == archive.id])
+                else:
+                    i += files_count
+                self.directory_progress.controls[1].value = i / total_files
+                await self.directory_progress.update_async()
             if self.changed_files:
                 self.changed_files.sort(key=lambda x: [x.archive.index.path, x.path])
                 for file in self.changed_files:
@@ -628,7 +645,6 @@ class Interface:
             self.extract_all_button.disabled = False
             self.directory_progress.visible = False
             self.directory_list.visible = True
-            self.files_progress.visible = False
             self.files_list.visible = True
             self.main.disabled = False
             await self.page.update_async()

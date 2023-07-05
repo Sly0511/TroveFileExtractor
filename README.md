@@ -8,6 +8,12 @@ This has allowed me to greatly increase the speed at which the extraction goes, 
 <br>The tool will read every single archive and get the content of each file and compare to the already extracted files.
 
 
+## How to install and run
+Install required dependency from microsoft [Microsoft Visual C++ Redistributable 2015-2022](https://aka.ms/vs/17/release/vc_redist.x64.exe)
+<br>Get the latest release from [Releases](https://github.com/Sly0511/TroveFileExtractor/releases)
+<br>Run the `.msi` package and install the program
+<br>Go to your desktop and run the program from the newly created shortcut
+
 ## Numbers
 - A full extraction by my tool can be 4 times or more faster than current methods available.
 - A selected extraction can be done in mere seconds allowing you to fine extract single directories if you wish.

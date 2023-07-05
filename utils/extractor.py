@@ -210,14 +210,32 @@ class TFIndex:
 
 
 async def find_all_indexes(path: Path, hashes: dict, track_changes=True) -> Generator[TFIndex]:
-    for index_file in path.rglob("index.tfi"):
-        index = TFIndex(index_file)
-        if not track_changes:
-            yield index
+    known_directories = [
+        "audio",
+        "blueprints",
+        "fonts",
+        "languages",
+        "models",
+        "movies",
+        "particles",
+        "prefabs",
+        "shadersunified",
+        "textures",
+        "ui",
+    ]
+    for item in path.iterdir():
+        if item.is_file():
             continue
-        hash = hashes.get(str(index.path.relative_to(path)))
-        if hash is None or await index.content_hash != hash:
-            yield index
+        if item.name not in known_directories:
+            continue
+        for index_file in item.rglob("index.tfi"):
+            index = TFIndex(index_file)
+            if not track_changes:
+                yield index
+                continue
+            hash = hashes.get(str(index.path.relative_to(path)))
+            if hash is None or await index.content_hash != hash:
+                yield index
 
 
 async def find_all_archives(path: Path, hashes: dict) -> Generator[TFArchive]:
@@ -225,7 +243,7 @@ async def find_all_archives(path: Path, hashes: dict) -> Generator[TFArchive]:
         for archive in index.archives:
             opath = archive.path.relative_to(path)
             hash = hashes.get(opath)
-            if hash is None or await archive.content_hash != hash:
+            if hash is None or (await archive.content_hash) != hash:
                 yield archive
 
 
@@ -237,7 +255,7 @@ async def find_all_files(path: Path, hashes: dict) -> Generator[TroveFile]:
 
 async def find_changes(archive_path: Path, extracted_path: Path, hashes: dict) -> Generator[TroveFile]:
     async for file in find_all_files(archive_path, hashes):
-        if await file.compare(archive_path, extracted_path) in [
+        if (await file.compare(archive_path, extracted_path)) in [
             FileStatus.added,
             FileStatus.changed
         ]:

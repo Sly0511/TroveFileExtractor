@@ -65,7 +65,7 @@ def GetTroveLocations():
             steam_path = Path(winreg.QueryValueEx(key, steam_install_value)[0])
         except WindowsError:
             continue
-    if steam_path.exists():
+    if steam_path is not None and steam_path.exists():
         config_path = steam_path.joinpath("config/libraryfolders.vdf")
         config = parse(open(config_path))
         library_folders = [
