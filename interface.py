@@ -15,7 +15,6 @@ from flet import (
     Text,
     ElevatedButton,
     Switch,
-    ProgressRing,
     Dropdown,
     dropdown,
     MainAxisAlignment,
@@ -55,6 +54,8 @@ class Interface:
                 self.locations.extract_to = directory[1].joinpath("extracted")
             if self.locations.changes_to is None:
                 self.locations.changes_to = directory[1].joinpath("changes")
+            if self.locations.changes_from is None:
+                self.locations.changes_to = directory[1].joinpath("extracted")
         self.extract_from = PathField(
             data="extract_from",
             label="Trove directory:",
@@ -71,6 +72,15 @@ class Interface:
             # on_submit=self.set_text_directory,
             col=11
         )
+        self.changes_from = PathField(
+            data="changes_from",
+            label="Compare changes with:",
+            value=self.locations.changes_from,
+            on_change=self.avoid_text_edit,
+            # on_submit=self.set_text_directory,
+            disabled=not self.page.preferences.advanced_mode,
+            col=11
+        )
         self.changes_to = PathField(
             data="changes_to",
             label="Save changes to:",
@@ -84,6 +94,13 @@ class Interface:
             value=self.page.preferences.changes_name_format,
             on_change=self.set_changes_format,
             col=4
+        )
+        self.changes_from_pick = IconButton(
+            icons.FOLDER,
+            data="changes_from",
+            on_click=self.pick_directory,
+            col=1,
+            disabled=not self.page.preferences.advanced_mode,
         )
         self.changes_to_pick = IconButton(
             icons.FOLDER,
@@ -199,6 +216,8 @@ class Interface:
                     controls=[
                         ResponsiveRow(
                             controls=[
+                                self.changes_from_pick,
+                                self.changes_from,
                                 ResponsiveRow(
                                     controls=[
                                         self.changes_to_pick,
@@ -207,7 +226,8 @@ class Interface:
                                     ],
                                     vertical_alignment="center"
                                 ),
-                            ]
+                            ],
+                            vertical_alignment="center"
                         ),
                         self.extract_changes_button,
                         self.extract_selected_button,
@@ -334,6 +354,7 @@ class Interface:
     @long_throttle
     async def set_changes_format(self, event):
         self.page.preferences.changes_name_format = event.control.value
+        self.page.preferences.save()
         self.page.snack_bar.content.value = "Changed the format for changes folder"
         self.page.snack_bar.bgcolor = "green"
         self.page.snack_bar.open = True
@@ -437,6 +458,9 @@ class Interface:
                     return await self.page.update_async()
             trove_path = Path(event.path)
             self.directory_dropdown.value = trove_path if trove_path in [x[1] for x in self.trove_locations] else "none"
+        if event.control.data in ["extract_from", "changes_from"]:
+            self.directory_list.rows.clear()
+            self.files_list.rows.clear()
         setattr(self.locations, event.control.data, Path(event.path))
         control = getattr(self, event.control.data)
         setattr(control, "value", Path(event.path))
@@ -546,7 +570,7 @@ class Interface:
                                     (
                                         await file.compare(
                                             self.locations.extract_from,
-                                            self.locations.extract_to
+                                            self.locations.changes_from
                                         )
                                     )
                                     in [FileStatus.added, FileStatus.changed]
@@ -767,7 +791,12 @@ class Interface:
             self.cancel_extraction_button.visible = False
             if self.page.preferences.advanced_mode:
                 dated_folder = self.locations.changes_to.joinpath(
-                    datetime.now().strftime(self.page.preferences.changes_name_format)
+                    datetime.now().strftime(
+                        self.page.preferences.changes_name_format.replace(
+                            "$dir",
+                            self.locations.extract_to.name
+                        )
+                    )
                 )
                 old_changes = dated_folder.joinpath("old")
                 new_changes = dated_folder.joinpath("new")
@@ -794,18 +823,16 @@ class Interface:
                     await asyncio.sleep(0.1)
                 if self.page.preferences.advanced_mode:
                     # Keep an old copy for comparisons
-                    await file.copy_old(self.locations.extract_from, self.locations.extract_to, old_changes)
+                    await file.copy_old(self.locations.extract_from, self.locations.changes_from, old_changes)
                     # Add changes
                     await file.save(self.locations.extract_from, new_changes)
-                    metadata = {
-
-                    }
                 # Save into extracted location
                 await file.save(self.locations.extract_from, self.locations.extract_to)
                 index_relative_path = file.archive.index.path.relative_to(self.locations.extract_from)
                 archive_relative_path = file.archive.path.relative_to(self.locations.extract_from)
                 self.hashes[str(index_relative_path)] = await file.archive.index.content_hash
                 self.hashes[str(archive_relative_path)] = await file.archive.content_hash
+            # TODO: Add metadata file for each changes folder
         elif event.control.data in ["all", "selected"]:
             self.cancel_extraction_button.visible = True
             await self.cancel_extraction_button.update_async()
@@ -844,7 +871,8 @@ class Interface:
                         await file.save(self.locations.extract_from, self.locations.extract_to)
         hashes_path = self.locations.extract_from.joinpath("hashes.json")
         hashes_path.write_text(json.dumps(self.hashes, indent=4))
-        self.cancel_extraction_button.visible = True
+        self.main_controls.disabled = False
+        self.cancel_extraction_button.visible = False
         self.extraction_progress.controls[0].controls[0].value = "Extractor Idle"
         self.extraction_progress.controls[0].controls[1].value = ""
         self.extraction_progress.controls[1].controls[0].value = 0

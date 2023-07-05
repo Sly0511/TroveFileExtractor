@@ -20,7 +20,6 @@ class AccentColor(Enum):
     yellow = "YELLOW"
     amber = "AMBER"
     orange = "ORANGE"
-
     brown = "BROWN"
 
     def __str__(self):
@@ -36,6 +35,7 @@ class DismissableContent(BaseModel):
 class Directories(BaseModel):
     extract_from: Optional[Path] = None
     extract_to: Optional[Path] = None
+    changes_from: Optional[Path] = None
     changes_to: Optional[Path] = None
 
 
@@ -45,7 +45,7 @@ class Preferences(BaseModel):
     accent_color: AccentColor = AccentColor.amber
     advanced_mode: bool = False
     performance_mode: bool = False
-    changes_name_format: str = "%Y-%m-%d %H-%M-%S"
+    changes_name_format: str = "%Y-%m-%d %H-%M-%S $dir"
     directories: Directories = Field(default_factory=Directories)
     dismissables: DismissableContent = Field(default_factory=DismissableContent)
 

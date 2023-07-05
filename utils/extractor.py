@@ -89,7 +89,7 @@ class TroveFile:
         path_to_save.parent.mkdir(parents=True, exist_ok=True)
         async with aiofiles.open(path_to_get, "rb") as old:
             async with aiofiles.open(path_to_save, "wb") as new:
-                await new.write(old)
+                await new.write(await old.read())
 
     async def save(self, opath: Path, path: Path):
         path_to_save = self.extract_to_path(opath, path)
