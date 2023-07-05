@@ -520,6 +520,7 @@ class Interface:
             async for index in find_all_indexes(self.locations.extract_from, self.hashes, False):
                 indexes.append([index, len(await index.files_list), 0])
             total_files = sum([index[1] for index in indexes])
+            progress = 0
             for index, files_count, _ in indexes:
                 index_hash = self.hashes.get(str(index.path.relative_to(self.locations.extract_from)))
                 if index_hash is None or (await index.content_hash) != index_hash:
@@ -527,6 +528,10 @@ class Interface:
                         archive_hash = self.hashes.get(archive.path.relative_to(self.locations.extract_from))
                         if archive_hash is None or (await archive.content_hash) != archive_hash:
                             async for file in archive.files():
+                                if progress < (new_progress := round(i / total_files * 1000) / 1000):
+                                    progress = new_progress
+                                    self.directory_progress.controls[1].value = new_progress
+                                    await self.directory_progress.update_async()
                                 i += 1
                                 if (
                                     (
@@ -542,8 +547,6 @@ class Interface:
                             i += len([f for f in archive.index.files_list() if int(f["archive_index"]) == archive.id])
                 else:
                     i += files_count
-                self.directory_progress.controls[1].value = i / total_files
-                await self.directory_progress.update_async()
             if self.changed_files:
                 self.changed_files.sort(key=lambda x: [x.archive.index.path, x.path])
                 for file in self.changed_files:

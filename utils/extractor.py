@@ -73,12 +73,12 @@ class TroveFile:
         extracted_file = self.extracted_path(opath, path)
         if not extracted_file.exists():
             self._status = FileStatus.added
-
-        async with aiofiles.open(extracted_file, "rb") as f:
-            if await self.content_hash == md5(await f.read()).hexdigest():
-                self._status = FileStatus.unchanged
-            else:
-                self._status = FileStatus.changed
+        else:
+            async with aiofiles.open(extracted_file, "rb") as f:
+                if await self.content_hash == md5(await f.read()).hexdigest():
+                    self._status = FileStatus.unchanged
+                else:
+                    self._status = FileStatus.changed
         return self.status
 
     async def copy_old(self, opath: Path, gpath: Path, path: Path):
