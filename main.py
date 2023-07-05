@@ -30,7 +30,7 @@ class Extractor:
         )
         logging.basicConfig(format='%(message)s', level=logging.INFO, handlers=targets)
         page.preferences = Preferences.load_from_json(app_data.joinpath("preferences.json"))
-        page.title = "Trove File Archive Extractor"
+        page.title = "Trove File Archive Extractor 0.9.8-beta"
         page.theme_mode = page.preferences.theme
         page.theme = Theme(color_scheme_seed=str(page.preferences.accent_color))
         page.appbar = TFAExtractionAppBar(page=page)
@@ -41,6 +41,7 @@ class Extractor:
         page.snack_bar = SnackBar(content=Text())
         interface = Interface(page)
         await page.add_async(Column(controls=[interface.main]))
+
 
 if __name__ == "__main__":
     AppObj = Extractor()

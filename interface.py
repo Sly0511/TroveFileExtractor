@@ -93,6 +93,7 @@ class Interface:
         self.change_format = TextField(
             value=self.page.preferences.changes_name_format,
             on_change=self.set_changes_format,
+            disabled=not self.page.preferences.advanced_mode,
             col=4
         )
         self.changes_from_pick = IconButton(
@@ -149,6 +150,12 @@ class Interface:
             on_change=self.change_directory_dropdown,
             col=6
         )
+        self.refresh_with_changes_button = ElevatedButton(
+            "Refresh changed/added files list",
+            on_click=self.refresh_changes,
+            disabled=not self.page.preferences.advanced_mode,
+            col=6
+        )
         self.main_controls = ResponsiveRow(
             controls=[
                 ResponsiveRow(
@@ -185,10 +192,11 @@ class Interface:
                             col=12
                         ),
                         ElevatedButton(
-                            "Refresh lists",
+                            "Refresh directory list",
                             on_click=self.refresh_directories,
-                            col=4
+                            col=6
                         ),
+                        self.refresh_with_changes_button,
                         Row(
                             controls=[
                                 Switch(
@@ -197,7 +205,7 @@ class Interface:
                                 ),
                                 Text("Advanced Settings")
                             ],
-                            col=4
+                            col=6
                         ),
                         Row(
                             controls=[
@@ -207,7 +215,7 @@ class Interface:
                                 ),
                                 Text("Performance Mode")
                             ],
-                            col=4
+                            col=6
                         ),
                     ],
                     col=6
@@ -471,7 +479,7 @@ class Interface:
         new_path = Path(event.control.value)
         old_path = Path(self.extract_from.value)
         self.extract_from.value = str(new_path)
-        await self.page.update_async()
+        self.locations.extract_from = new_path
         for field in self.locations.__fields__:
             if field == "extract_from":
                 continue
@@ -492,6 +500,10 @@ class Interface:
         self.page.preferences.advanced_mode = event.control.value
         self.changes_to.disabled = not event.control.value
         self.changes_to_pick.disabled = not event.control.value
+        self.changes_from.disabled = not event.control.value
+        self.changes_from_pick.disabled = not event.control.value
+        self.refresh_with_changes_button.disabled = not event.control.value
+        self.change_format.disabled = not event.control.value
         self.page.preferences.save()
         await self.page.update_async()
 
@@ -523,8 +535,12 @@ class Interface:
         self.main.disabled = True
         self.refresh_lists.start()
 
+    async def refresh_changes(self, _):
+        self.main.disabled = True
+        self.refresh_lists.start(True)
+
     @tasks.loop(seconds=1)
-    async def refresh_lists(self):
+    async def refresh_lists(self, with_changes=False):
         try:
             self.directory_list.rows.clear()
             self.files_list.rows.clear()
@@ -548,38 +564,39 @@ class Interface:
             i = 0
             async for index in find_all_indexes(self.locations.extract_from, self.hashes, False):
                 indexes.append([index, len(await index.files_list), 0])
-            total_files = sum([index[1] for index in indexes])
-            progress = 0
-            start = perf_counter()
-            for index, files_count, _ in indexes:
-                index_hash = self.hashes.get(str(index.path.relative_to(self.locations.extract_from)))
-                if index_hash is None or (await index.content_hash) != index_hash:
-                    for archive in index.archives:
-                        archive_hash = self.hashes.get(archive.path.relative_to(self.locations.extract_from))
-                        if archive_hash is None or (await archive.content_hash) != archive_hash:
-                            async for file in archive.files():
-                                i += 1
-                                if progress < (new_progress := round(i / total_files * 1000) / 1000):
-                                    elapsed = (perf_counter() - start)
-                                    remaining = round(elapsed * (total_files / i - 1))
-                                    self.directory_progress.controls[0].controls[1].value = f"[{round(i / total_files * 100, 1)}%] | Elapsed: {round(elapsed):>3}s | Estimated {remaining:>3}s remaining\r"
-                                    progress = new_progress
-                                    self.directory_progress.controls[1].value = new_progress
-                                    await self.directory_progress.update_async()
-                                if (
-                                    (
-                                        await file.compare(
-                                            self.locations.extract_from,
-                                            self.locations.changes_from
+            if with_changes:
+                total_files = sum([index[1] for index in indexes])
+                progress = 0
+                start = perf_counter()
+                for index, files_count, _ in indexes:
+                    index_hash = self.hashes.get(str(index.path.relative_to(self.locations.extract_from)))
+                    if index_hash is None or (await index.content_hash) != index_hash:
+                        for archive in index.archives:
+                            archive_hash = self.hashes.get(archive.path.relative_to(self.locations.extract_from))
+                            if archive_hash is None or (await archive.content_hash) != archive_hash:
+                                async for file in archive.files():
+                                    i += 1
+                                    if progress < (new_progress := round(i / total_files * 1000) / 1000):
+                                        elapsed = (perf_counter() - start)
+                                        remaining = round(elapsed * (total_files / i - 1))
+                                        self.directory_progress.controls[0].controls[1].value = f"[{round(i / total_files * 100, 1)}%] | Elapsed: {round(elapsed):>3}s | Estimated {remaining:>3}s remaining\r"
+                                        progress = new_progress
+                                        self.directory_progress.controls[1].value = new_progress
+                                        await self.directory_progress.update_async()
+                                    if (
+                                        (
+                                            await file.compare(
+                                                self.locations.extract_from,
+                                                self.locations.changes_from
+                                            )
                                         )
-                                    )
-                                    in [FileStatus.added, FileStatus.changed]
-                                ):
-                                    self.changed_files.append(file)
-                        else:
-                            i += len([f for f in archive.index.files_list() if int(f["archive_index"]) == archive.id])
-                else:
-                    i += files_count
+                                        in [FileStatus.added, FileStatus.changed]
+                                    ):
+                                        self.changed_files.append(file)
+                            else:
+                                i += len([f for f in archive.index.files_list() if int(f["archive_index"]) == archive.id])
+                    else:
+                        i += files_count
             if self.changed_files:
                 self.changed_files.sort(key=lambda x: [x.archive.index.path, x.path])
                 for file in self.changed_files:
@@ -632,6 +649,16 @@ class Interface:
                         ]
                     )
                 )
+            elif not with_changes:
+                self.files_list.rows.append(
+                    DataRow(
+                        cells=[
+                            DataCell(Text("No changes were queried.")),
+                            DataCell(Text(""))
+                        ]
+                    )
+                )
+                self.extract_changes_button.disabled = True
             elif len(self.changed_files) == 0:
                 self.files_list.rows.append(
                     DataRow(
