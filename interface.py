@@ -217,10 +217,15 @@ class Interface:
                 )
             ]
         )
-        self.directory_progress = Row(
+        self.directory_progress = Column(
             controls=[
-                Text("Loading files...\nThis may take a minute"),
-                ProgressBar(value=0, expand=True)
+                Row(
+                    controls=[
+                        Text("Loading files..."),
+                        Text("")
+                    ],
+                ),
+                ProgressBar(value=0, expand=False)
             ],
             visible=False
         )
@@ -521,6 +526,7 @@ class Interface:
                 indexes.append([index, len(await index.files_list), 0])
             total_files = sum([index[1] for index in indexes])
             progress = 0
+            start = perf_counter()
             for index, files_count, _ in indexes:
                 index_hash = self.hashes.get(str(index.path.relative_to(self.locations.extract_from)))
                 if index_hash is None or (await index.content_hash) != index_hash:
@@ -528,11 +534,14 @@ class Interface:
                         archive_hash = self.hashes.get(archive.path.relative_to(self.locations.extract_from))
                         if archive_hash is None or (await archive.content_hash) != archive_hash:
                             async for file in archive.files():
+                                i += 1
                                 if progress < (new_progress := round(i / total_files * 1000) / 1000):
+                                    elapsed = (perf_counter() - start)
+                                    remaining = round(elapsed * (total_files / i - 1))
+                                    self.directory_progress.controls[0].controls[1].value = f"[{round(i / total_files * 100, 1)}%] | Elapsed: {round(elapsed):>3}s | Estimated {remaining:>3}s remaining\r"
                                     progress = new_progress
                                     self.directory_progress.controls[1].value = new_progress
                                     await self.directory_progress.update_async()
-                                i += 1
                                 if (
                                     (
                                         await file.compare(
@@ -642,6 +651,8 @@ class Interface:
             self.extract_selected_button.text = f"Extract Selected [{naturalsize(selected_size, gnu=True)}]"
             self.extract_all_button.text = f"Extract All [{naturalsize(all_size, gnu=True)}]"
             self.metrics.controls[0].controls[1].value = naturalsize(sum([f.size for f in self.changed_files]), gnu=True)
+            self.directory_progress.controls[0].controls[1].value = ""
+            self.directory_progress.controls[1].value = 0
             self.extract_selected_button.disabled = not bool([r for r in self.directory_list.rows if r.selected])
             self.select_all_button.disabled = False
             self.unselect_all_button.disabled = False
