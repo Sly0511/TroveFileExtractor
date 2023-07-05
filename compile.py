@@ -39,14 +39,14 @@ setup(
     version=version,
     author=author,
     url=f"https://github.com/Sly0511/{tech_name}",
-    description=description,
+    description=name,
     options=options,
     executables=[
         Executable(
             "main.py",
-            icon=icon,
             target_name=f"{tech_name}.exe",
-            base=None,  # "Win32GUI",
+            icon=icon,
+            base="Win32GUI",
             copyright=f"{author} {copyright}",
             shortcut_name=name,
             shortcut_dir="DesktopFolder",
