@@ -5,7 +5,7 @@ from cx_Freeze import setup, Executable
 author = "sly.dev"
 name = "Trove File Extractor"
 tech_name = "TroveFileExtractor"
-version = "0.9.8b0"
+version = "1.0.0"
 description = "A tool for extraction of Trove Archive files"
 icon = "assets/favicon.ico"
 copyright = "2023-Present"

@@ -58,8 +58,10 @@ class Preferences(BaseModel):
             return pref
         try:
             data = loads(path.read_text())
-            return cls.parse_obj(data)
-        except Exception as e:
+            pref = cls.parse_obj(data)
+            pref.save()
+            return pref
+        except Exception:
             pref = cls(path=path)
             with open(path, "w+") as f:
                 f.write(pref.json(indent=4))

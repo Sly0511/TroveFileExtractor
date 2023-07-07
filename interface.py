@@ -1,8 +1,9 @@
 import asyncio
 import json
-from pathlib import Path
-from datetime import datetime
 import traceback
+from datetime import datetime
+from pathlib import Path
+from time import perf_counter
 
 from flet import (
     ResponsiveRow,
@@ -26,13 +27,13 @@ from flet import (
     icons
 )
 from humanize import naturalsize
+from yaml import dump
 
 from utils import tasks
 from utils.controls import PathField
 from utils.extractor import find_all_indexes, FileStatus
-from utils.trove import GetTroveLocations
 from utils.functions import throttle, long_throttle
-from time import perf_counter
+from utils.trove import GetTroveLocations
 
 
 class Interface:
@@ -439,7 +440,9 @@ class Interface:
         file_picker = FilePicker(data=event.control.data, on_result=self.set_directory)
         self.page.overlay.append(file_picker)
         await self.page.update_async()
-        await file_picker.get_directory_path_async(initial_directory=Path(event.control.data).parent)
+        await file_picker.get_directory_path_async(
+            initial_directory=str(Path(getattr(self.locations, event.control.data)).parent)
+        )
 
     async def set_directory(self, event):
         if event.path is None:
@@ -481,7 +484,7 @@ class Interface:
         self.extract_from.value = str(new_path)
         self.locations.extract_from = new_path
         for field in self.locations.__fields__:
-            if field == "extract_from":
+            if field in ["extract_from", "changes_to"]:
                 continue
             path = getattr(self.locations, field)
             try:
@@ -821,8 +824,8 @@ class Interface:
                     datetime.now().strftime(
                         self.page.preferences.changes_name_format.replace(
                             "$dir",
-                            self.locations.extract_to.name
-                        )
+                            self.locations.extract_from.name
+                        ).strip()
                     )
                 )
                 old_changes = dated_folder.joinpath("old")
@@ -835,19 +838,19 @@ class Interface:
                     f.write(json.dumps(self.hashes, indent=4))
             selected_indexes = [r.data for r in self.directory_list.rows if r.selected]
             changes = [f for f in self.changed_files if f.archive.index in selected_indexes]
+            selected_archives = [f.archive for f in changes]
             total = len(changes)
             start = perf_counter()
             for i, file in enumerate(changes, 1):
                 old_pro = self.extraction_progress.controls[1].controls[0].value
                 i += 1
-                if old_pro != (progress := round(i/total*100)/100):
-                    elapsed = (perf_counter() - start)
+                if old_pro != (progress := round(i/total*1000)/1000):
+                    elapsed = perf_counter() - start
                     remaining = round(elapsed * (total / i - 1))
-                    self.extraction_progress.controls[0].controls[0].value = f"[{round(i / total * 100)}%] | Elapsed: {round(elapsed):>3}s | Estimated {remaining:>3}s remaining | Extracting {event.control.data}:\r"
+                    self.extraction_progress.controls[0].controls[0].value = f"[{round(i / total * 100, 1)}%] | Elapsed: {round(elapsed):>3}s | Estimated {remaining:>3}s remaining | Extracting {event.control.data}:\r"
                     self.extraction_progress.controls[0].controls[1].value = file.name
                     self.extraction_progress.controls[1].controls[0].value = progress
                     await self.extraction_progress.update_async()
-                    await asyncio.sleep(0.1)
                 if self.page.preferences.advanced_mode:
                     # Keep an old copy for comparisons
                     await file.copy_old(self.locations.extract_from, self.locations.changes_from, old_changes)
@@ -859,7 +862,40 @@ class Interface:
                 archive_relative_path = file.archive.path.relative_to(self.locations.extract_from)
                 self.hashes[str(index_relative_path)] = await file.archive.index.content_hash
                 self.hashes[str(archive_relative_path)] = await file.archive.content_hash
-            # TODO: Add metadata file for each changes folder
+            wrote = sum([f.size for f in changes])
+            saved = sum([f["size"] for r in self.directory_list.rows for f in await r.data.files_list]) - wrote
+            metadata = {
+                "Extracted From": str(self.locations.extract_from),
+                "Extracted To": str(self.locations.extract_to),
+                "Compared with": str(self.locations.changes_from),
+                "Changes to": str(self.locations.changes_to),
+                "Date": datetime.now().isoformat(),
+                "Byte writes": wrote,
+                "Bytes saved": saved,
+                "Byte writes (Readable)": naturalsize(wrote, gnu=True),
+                "Bytes saved (Readable)": naturalsize(saved, gnu=True),
+                "Time elapsed (Seconds)": round(perf_counter() - start, 2),
+                "Extraction": {
+                    "Type": "Changes",
+                    "Indexes": sorted(
+                        [
+                            str(index.path.relative_to(self.locations.extract_from)) for index in selected_indexes
+                        ]
+                    ),
+                    "Archives": (
+                        [
+                            str(archive.path.relative_to(self.locations.extract_from)) for archive in selected_archives
+                        ]
+                    ),
+                    "Files": (
+                        [
+                            str(f.path.relative_to(self.locations.extract_from)) for f in changes
+                        ]
+                    )
+                }
+            }
+            with open(new_changes.joinpath("metadata.yml"), "w+") as f:
+                dump(metadata, f, sort_keys=False)
         elif event.control.data in ["all", "selected"]:
             self.cancel_extraction_button.visible = True
             await self.cancel_extraction_button.update_async()
@@ -888,10 +924,10 @@ class Interface:
                             return await self.page.update_async()
                         old_pro = self.extraction_progress.controls[1].controls[0].value
                         i += 1
-                        if old_pro != (progress := round(i/number_of_files*100)/100):
+                        if old_pro != (progress := round(i/number_of_files*1000)/1000):
                             elapsed = (perf_counter() - start)
                             remaining = round(elapsed * (number_of_files / i - 1))
-                            self.extraction_progress.controls[0].controls[0].value = f"[{round(i / number_of_files * 100)}%] | Elapsed: {round(elapsed):>3}s | Estimated {remaining:>3}s remaining | Extracting {event.control.data}:\r"
+                            self.extraction_progress.controls[0].controls[0].value = f"[{round(i / number_of_files * 100, 1)}%] | Elapsed: {round(elapsed):>3}s | Estimated {remaining:>3}s remaining | Extracting {event.control.data}:\r"
                             self.extraction_progress.controls[0].controls[1].value = file.name
                             self.extraction_progress.controls[1].controls[0].value = progress
                             await self.extraction_progress.update_async()

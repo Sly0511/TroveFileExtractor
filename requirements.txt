@@ -4,3 +4,4 @@ pydantic==1.10.11
 flet
 vdf
 aiofiles
+PyYAML
