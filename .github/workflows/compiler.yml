@@ -21,10 +21,10 @@ jobs:
         run: python compile.py bdist_msi
 
       - name: Move Files
-        run: move dist/*.exe "TroveFileExtractor.exe"
+        run: move dist/TroveFileExtractor.msi "TroveFileExtractor.msi"
 
       - name: Create Github Release
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "TroveFileExtractor.exe"
+          artifacts: "TroveFileExtractor.msi"
           token: ${{ secrets.COMPILER }}
