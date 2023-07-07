@@ -1,14 +1,11 @@
-name: Compile code
+name: Compile EXE
 on:
-  release:
-    types:
-      - created
-
+    push:
+      tags:
+        - "v*.*"
 jobs:
   build:
-    name: Compile Code
     runs-on: windows-latest
-
     steps:
       - uses: actions/checkout@v3
 
@@ -17,21 +14,17 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
+      - name: Install required modules
         run: python -m pip install -r requirements.txt
 
-      - name: Compile code into MSI package
+      - name: Compile code into EXE
         run: python compile.py bdist_msi
 
       - name: Move Files
-        run: |
-          FILE_NAME="TroveFileExtractor"
-          RELEASE_NAME="${{ github.event.release.tag_name }}"
-          NEW_FILE_NAME="${FILE_NAME}_${RELEASE_NAME}-win64.msi"
-          move dist/TroveFileExtractor.msi $NEW_FILE_NAME
+        run: move dist/TroveFileExtractor.msi "TroveFileExtractor.msi"
 
       - name: Create Github Release
         uses: ncipollo/release-action@v1
         with:
-          artifacts: "TroveFileExtractor_${{ github.event.release.tag_name }}-win64.msi"
+          artifacts: "TroveFileExtractor.msi"
           token: ${{ secrets.COMPILER }}
