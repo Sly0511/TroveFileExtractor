@@ -5,3 +5,4 @@ flet
 vdf
 aiofiles
 PyYAML
+cx-Freeze
