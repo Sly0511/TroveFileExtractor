@@ -18,10 +18,10 @@ jobs:
         run: python -m pip install -r requirements.txt
 
       - name: Compile code into EXE
-        run: flet pack --icon="assets/favicon.ico" --add-data="assets;assets" --product-name="Trove File Extractor" --file-description="Trove File Extractor" --company-name="Sly" --copyright="Sly 2023-Present" main.py
+        run: python compile.py bdist_msi
 
       - name: Move Files
-        run: move dist/main.exe "TroveFileExtractor.exe"
+        run: move dist/*.exe "TroveFileExtractor.exe"
 
       - name: Create Github Release
         uses: ncipollo/release-action@v1
