@@ -25,12 +25,11 @@ jobs:
 
       - name: Move Files
         run: |
-          $env:FILE_NAME="TroveFileExtractor"
           $env:RELEASE_NAME="${{ github.event.release.name }}"
-          $env:NEW_FILE_NAME="${env:FILE_NAME}-${env:RELEASE_NAME}-win64.msi"
+          $env:NEW_FILE_NAME="TroveFileExtractor-${{ github.event.release.name }}-win64.msi"
           ls
           ls dist
-          Move-Item "dist/${ env:NEW_FILE_NAME }" ".\${ env:NEW_FILE_NAME }"
+          Move-Item "dist/TroveFileExtractor-${{ github.event.release.name }}-win64.msi" ".TroveFileExtractor-${{ github.event.release.name }}-win64.msi"
           ls
           ls dist
 
