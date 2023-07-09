@@ -23,7 +23,7 @@ build_exe_options = {
 }
 
 bdist_msi_options = {
-    'target_name': "TroveFileExtractor.msi",
+    'target_name': tech_name,
     'upgrade_code': app_id,
     'add_to_path': False,
     'install_icon': icon,
