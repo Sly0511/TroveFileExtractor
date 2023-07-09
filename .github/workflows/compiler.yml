@@ -28,7 +28,7 @@ jobs:
           $env:FILE_NAME="TroveFileExtractor"
           $env:RELEASE_NAME="${{ github.event.release.tag_name }}"
           $env:NEW_FILE_NAME="${env:FILE_NAME}_${env:RELEASE_NAME}-win64.msi"
-          move dist/TroveFileExtractor.msi $NEW_FILE_NAME
+          Move-Item -Path "dist/TroveFileExtractor.msi" -Destination $NEW_FILE_NAME
 
       - name: Create Github Release
         uses: ncipollo/release-action@v1
