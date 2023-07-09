@@ -30,7 +30,13 @@ jobs:
           $env:NEW_FILE_NAME="${env:FILE_NAME}_${env:RELEASE_NAME}-win64.msi"
           Write-Host "NEW_FILE_NAME: ${env:NEW_FILE_NAME}"
           ls dist
-          Move-Item "dist/TroveFileExtractor.msi" ".\${env: NEW_FILE_NAME}"
+          ls
+          Move-Item "dist/TroveFileExtractor.msi" ".\TroveFileExtractor.msi"
+          ls dist
+          ls
+          Write-Host "NEW_FILE_NAME: ${{ env.NEW_FILE_NAME }}"
+          Rename-Item ".\TroveFileExtractor.msi" "${env:NEW_FILE_NAME}"
+          ls dist
           ls
 
       - name: Upload file to release
