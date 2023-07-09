@@ -1,15 +1,14 @@
 from cx_Freeze import setup, Executable
-
-
-# Metadata
-author = "sly.dev"
-name = "Trove File Extractor"
-tech_name = "TroveFileExtractor"
-version = "1.0.1"
-description = "A tool for extraction of Trove Archive files"
-icon = "assets/favicon.ico"
-copyright = "2023-Present"
-app_id = "{0b903f43-d5d0-4852-80e6-25715762039f}"
+from main import (
+    AUTHOR,
+    NAME,
+    TECH_NAME,
+    VERSION,
+    DESCRIPTION,
+    ICON,
+    COPYRIGHT,
+    APP_ID
+)
 
 build_exe_options = {
     "excludes": [
@@ -24,30 +23,30 @@ build_exe_options = {
 }
 
 bdist_msi_options = {
-    "target_name": tech_name,
-    "upgrade_code": app_id,
+    "target_name": TECH_NAME,
+    "upgrade_code": APP_ID,
     "add_to_path": False,
-    "install_icon": icon,
+    "install_icon": ICON,
     "all_users": True,
 }
 
 options = {"build_exe": build_exe_options, "bdist_msi": bdist_msi_options}
 
 setup(
-    name=name,
-    version=version,
-    author=author,
-    url=f"https://github.com/Sly0511/{tech_name}",
-    description=name,
+    name=NAME,
+    version=VERSION,
+    author=AUTHOR,
+    url=f"https://github.com/Sly0511/{TECH_NAME}",
+    description=NAME,
     options=options,
     executables=[
         Executable(
             "main.py",
-            target_name=f"{tech_name}.exe",
-            icon=icon,
+            target_name=f"{TECH_NAME}.exe",
+            icon=ICON,
             base="Win32GUI",
-            copyright=f"{author} {copyright}",
-            shortcut_name=name,
+            copyright=f"{AUTHOR} {COPYRIGHT}",
+            shortcut_name=NAME,
             shortcut_dir="DesktopFolder",
         )
     ],

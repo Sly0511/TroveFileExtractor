@@ -11,6 +11,16 @@ from utils.controls import TFAExtractionAppBar
 from utils.preferences import Preferences
 
 
+AUTHOR = "sly.dev"
+NAME = "Trove File Extractor"
+TECH_NAME = "TroveFileExtractor"
+VERSION = "1.0.2"
+DESCRIPTION = "A tool for extraction of Trove Archive files"
+ICON = "assets/favicon.ico"
+COPYRIGHT = "2023-Present"
+APP_ID = "{0b903f43-d5d0-4852-80e6-25715762039f}"
+
+
 class Extractor:
     def run(self):
         app(target=self.start, assets_dir="assets")
@@ -32,7 +42,7 @@ class Extractor:
         page.preferences = Preferences.load_from_json(
             app_data.joinpath("preferences.json")
         )
-        page.title = "Trove File Archive Extractor 0.9.8-beta"
+        page.title = f"Trove File Archive Extractor {VERSION}"
         page.theme_mode = page.preferences.theme
         page.theme = Theme(color_scheme_seed=str(page.preferences.accent_color))
         page.appbar = TFAExtractionAppBar(page=page)
