@@ -15,7 +15,7 @@ Install required dependency from microsoft [Microsoft Visual C++ Redistributable
 <br>Go to your desktop and run the program from the newly created shortcut
 
 ## Numbers
-- A full extraction by my tool can be 4 times or more faster than current methods available.
+- A full extraction by my tool can be 4 times or more, faster than current methods available.
 - A selected extraction can be done in mere seconds allowing you to fine extract single directories if you wish.
 - A changes extraction may take a little bit more but it sure is worth it
     - With the changes extraction the app will read and compare all files before extraction
