@@ -29,7 +29,7 @@ jobs:
           $env:NEW_FILE_NAME="TroveFileExtractor-${{ github.event.release.name }}-win64.msi"
           ls
           ls dist
-          Move-Item "dist/TroveFileExtractor-${{ github.event.release.name }}-win64.msi" ".TroveFileExtractor-${{ github.event.release.name }}-win64.msi"
+          Move-Item "dist/TroveFileExtractor-${{ github.event.release.name }}-win64.msi" ".\TroveFileExtractor-${{ github.event.release.name }}-win64.msi"
           ls
           ls dist
 
