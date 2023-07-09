@@ -191,9 +191,7 @@ class TFIndex:
     @property
     async def files_list(self) -> list[dict]:
         if not self._files:
-            self._files.extend(
-                [x async for x in self.get_files_list()]
-            )
+            self._files.extend([x async for x in self.get_files_list()])
         return self._files
 
     async def get_files_list(self) -> Generator[dict]:
@@ -209,7 +207,9 @@ class TFIndex:
             yield file
 
 
-async def find_all_indexes(path: Path, hashes: dict, track_changes=True) -> Generator[TFIndex]:
+async def find_all_indexes(
+    path: Path, hashes: dict, track_changes=True
+) -> Generator[TFIndex]:
     known_directories = [
         "audio",
         "blueprints",
@@ -253,11 +253,13 @@ async def find_all_files(path: Path, hashes: dict) -> Generator[TroveFile]:
             yield file
 
 
-async def find_changes(archive_path: Path, extracted_path: Path, hashes: dict) -> Generator[TroveFile]:
+async def find_changes(
+    archive_path: Path, extracted_path: Path, hashes: dict
+) -> Generator[TroveFile]:
     async for file in find_all_files(archive_path, hashes):
         if (await file.compare(archive_path, extracted_path)) in [
             FileStatus.added,
-            FileStatus.changed
+            FileStatus.changed,
         ]:
             yield file
 
@@ -269,7 +271,7 @@ def ReadVarInt7Bit(buffer: BinaryReader, pos):
         buffer.seek(pos)
         b = buffer.read_bytes()
         for i, byte in enumerate(b):
-            result |= ((byte & 0x7f) << shift)
+            result |= (byte & 0x7F) << shift
             pos += 1
             if not (byte & 0x80):
                 result &= (1 << 32) - 1
@@ -277,4 +279,4 @@ def ReadVarInt7Bit(buffer: BinaryReader, pos):
                 return result
             shift += 7
             if shift >= 64:
-                raise Exception('Too many bytes when decoding varint.')
+                raise Exception("Too many bytes when decoding varint.")

@@ -24,7 +24,7 @@ from flet import (
     AlertDialog,
     IconButton,
     TextField,
-    icons
+    icons,
 )
 from humanize import naturalsize
 from yaml import dump
@@ -63,7 +63,7 @@ class Interface:
             value=self.locations.extract_from,
             on_change=self.avoid_text_edit,
             # on_submit=self.set_text_directory,
-            col=10
+            col=10,
         )
         self.extract_to = PathField(
             data="extract_to",
@@ -71,7 +71,7 @@ class Interface:
             value=self.locations.extract_to,
             on_change=self.avoid_text_edit,
             # on_submit=self.set_text_directory,
-            col=11
+            col=11,
         )
         self.changes_from = PathField(
             data="changes_from",
@@ -80,7 +80,7 @@ class Interface:
             on_change=self.avoid_text_edit,
             # on_submit=self.set_text_directory,
             disabled=not self.page.preferences.advanced_mode,
-            col=11
+            col=11,
         )
         self.changes_to = PathField(
             data="changes_to",
@@ -89,13 +89,13 @@ class Interface:
             on_change=self.avoid_text_edit,
             # on_submit=self.set_text_directory,
             disabled=not self.page.preferences.advanced_mode,
-            col=7
+            col=7,
         )
         self.change_format = TextField(
             value=self.page.preferences.changes_name_format,
             on_change=self.set_changes_format,
             disabled=not self.page.preferences.advanced_mode,
-            col=4
+            col=4,
         )
         self.changes_from_pick = IconButton(
             icons.FOLDER,
@@ -112,50 +112,44 @@ class Interface:
             disabled=not self.page.preferences.advanced_mode,
         )
         self.extract_changes_button = ElevatedButton(
-            "Extract changed files",
-            on_click=self.extract_changes,
-            disabled=True,
-            col=6
+            "Extract changed files", on_click=self.extract_changes, disabled=True, col=6
         )
         self.extract_selected_button = ElevatedButton(
             "Extract selected directories",
             on_click=self.extract_selected,
             disabled=True,
-            col=6
+            col=6,
         )
         self.extract_all_button = ElevatedButton(
-            "Extract all",
-            on_click=self.extract_all,
-            disabled=True,
-            col=6
+            "Extract all", on_click=self.extract_all, disabled=True, col=6
         )
         self.cancel_extraction_button = ElevatedButton(
             "Cancel extraction",
             on_click=self.cancel_ongoing_extraction,
             visible=False,
-            col=2
+            col=2,
         )
         self.directory_dropdown = Dropdown(
             value=(
                 self.locations.extract_from
-                if self.locations.extract_from in [x[1] for x in self.trove_locations] else
-                "none"
+                if self.locations.extract_from in [x[1] for x in self.trove_locations]
+                else "none"
             ),
             options=[
                 dropdown.Option(
-                    key=location[1],
-                    text=f"{location[0]} - {str(location[1].name)}"
+                    key=location[1], text=f"{location[0]} - {str(location[1].name)}"
                 )
                 for location in self.trove_locations
-            ] + [dropdown.Option(key="none", text="Custom", disabled=True)],
+            ]
+            + [dropdown.Option(key="none", text="Custom", disabled=True)],
             on_change=self.change_directory_dropdown,
-            col=6
+            col=6,
         )
         self.refresh_with_changes_button = ElevatedButton(
             "Refresh changed/added files list",
             on_click=self.refresh_changes,
             disabled=not self.page.preferences.advanced_mode,
-            col=6
+            col=6,
         )
         self.main_controls = ResponsiveRow(
             controls=[
@@ -169,14 +163,14 @@ class Interface:
                                             icons.FOLDER,
                                             data="extract_from",
                                             on_click=self.pick_directory,
-                                            col=2
+                                            col=2,
                                         ),
                                         self.extract_from,
                                     ],
                                     vertical_alignment="center",
-                                    col=6
+                                    col=6,
                                 ),
-                                self.directory_dropdown
+                                self.directory_dropdown,
                             ],
                         ),
                         ResponsiveRow(
@@ -185,41 +179,41 @@ class Interface:
                                     icons.FOLDER,
                                     data="extract_to",
                                     on_click=self.pick_directory,
-                                    col=1
+                                    col=1,
                                 ),
                                 self.extract_to,
                             ],
                             vertical_alignment="center",
-                            col=12
+                            col=12,
                         ),
                         ElevatedButton(
                             "Refresh directory list",
                             on_click=self.refresh_directories,
-                            col=6
+                            col=6,
                         ),
                         self.refresh_with_changes_button,
                         Row(
                             controls=[
                                 Switch(
                                     value=self.page.preferences.advanced_mode,
-                                    on_change=self.switch_advanced_mode
+                                    on_change=self.switch_advanced_mode,
                                 ),
-                                Text("Advanced Settings")
+                                Text("Advanced Settings"),
                             ],
-                            col=6
+                            col=6,
                         ),
                         Row(
                             controls=[
                                 Switch(
                                     value=self.page.preferences.performance_mode,
-                                    on_change=self.switch_performance_mode
+                                    on_change=self.switch_performance_mode,
                                 ),
-                                Text("Performance Mode")
+                                Text("Performance Mode"),
                             ],
-                            col=6
+                            col=6,
                         ),
                     ],
-                    col=6
+                    col=6,
                 ),
                 ResponsiveRow(
                     controls=[
@@ -231,132 +225,99 @@ class Interface:
                                     controls=[
                                         self.changes_to_pick,
                                         self.changes_to,
-                                        self.change_format
+                                        self.change_format,
                                     ],
-                                    vertical_alignment="center"
+                                    vertical_alignment="center",
                                 ),
                             ],
-                            vertical_alignment="center"
+                            vertical_alignment="center",
                         ),
                         self.extract_changes_button,
                         self.extract_selected_button,
-                        self.extract_all_button
+                        self.extract_all_button,
                     ],
-                    col=6
-                )
+                    col=6,
+                ),
             ]
         )
         self.directory_progress = Column(
             controls=[
                 Row(
-                    controls=[
-                        Text("Loading files..."),
-                        Text("")
-                    ],
+                    controls=[Text("Loading files..."), Text("")],
                 ),
-                ProgressBar(value=0, expand=False)
+                ProgressBar(value=0, expand=False),
             ],
-            visible=False
+            visible=False,
         )
         self.directory_list = DataTable(
             columns=[
                 DataColumn(Text("Path"), on_sort=self.sort_by_path),
                 DataColumn(Text("Size"), on_sort=self.sort_by_size),
-                DataColumn(Text("Changed files"), on_sort=self.sort_by_changes)
+                DataColumn(Text("Changed files"), on_sort=self.sort_by_changes),
             ],
             column_spacing=15,
             heading_row_height=35,
             data_row_height=25,
             sort_column_index=2,
-            visible=False
+            visible=False,
         )
         self.files_list = DataTable(
-            columns=[
-                DataColumn(Text("Path")),
-                DataColumn(Text("Size"))
-            ],
+            columns=[DataColumn(Text("Path")), DataColumn(Text("Size"))],
             column_spacing=15,
             heading_row_height=35,
             data_row_height=25,
-            visible=False
+            visible=False,
         )
         self.metrics = Column(
             controls=[
-                Row(
-                    controls=[
-                        Text("Update Size:"),
-                        Text(naturalsize(0, gnu=True))
-                    ]
-                )
+                Row(controls=[Text("Update Size:"), Text(naturalsize(0, gnu=True))])
             ]
         )
         self.extraction_progress = Column(
             controls=[
-                Row(
-                    controls=[
-                        Text("Extractor Idle"),
-                        Text("")
-                    ],
-                    expand=False
-                ),
+                Row(controls=[Text("Extractor Idle"), Text("")], expand=False),
                 ResponsiveRow(
                     controls=[
-                        ProgressBar(
-                            height=30,
-                            value=0,
-                            col=10
-                        ),
-                        self.cancel_extraction_button
+                        ProgressBar(height=30, value=0, col=10),
+                        self.cancel_extraction_button,
                     ]
-                )
+                ),
             ],
-            horizontal_alignment="center"
+            horizontal_alignment="center",
         )
         self.select_all_button = ElevatedButton(
-            "Select all",
-            on_click=self.select_all,
-            disabled=True
+            "Select all", on_click=self.select_all, disabled=True
         )
         self.unselect_all_button = ElevatedButton(
-            "Unselect all",
-            on_click=self.unselect_all,
-            disabled=True
+            "Unselect all", on_click=self.unselect_all, disabled=True
         )
         self.main.controls = [
-            Column(
-                controls=[
-                    self.main_controls
-                ]
-            ),
-            Column(
-                controls=[
-                    self.extraction_progress
-                ]
-            ),
+            Column(controls=[self.main_controls]),
+            Column(controls=[self.extraction_progress]),
             Column(
                 controls=[
                     Row(
                         controls=[
                             Text(f"Directory List", size=20),
                             self.select_all_button,
-                            self.unselect_all_button
+                            self.unselect_all_button,
                         ]
                     ),
                     self.directory_progress,
-                    Column(controls=[self.directory_list], height=475, scroll="auto")
+                    Column(controls=[self.directory_list], height=475, scroll="auto"),
                 ],
                 height=475,
                 col=6,
-                alignment=MainAxisAlignment.START
+                alignment=MainAxisAlignment.START,
             ),
             Column(
                 controls=[
                     Text("Changed/Added Files List", size=20),
-                    Column(controls=[self.files_list], height=475, scroll="auto")
+                    Column(controls=[self.files_list], height=475, scroll="auto"),
                 ],
                 height=475,
                 col=6,
-                alignment=MainAxisAlignment.START
+                alignment=MainAxisAlignment.START,
             ),
         ]
 
@@ -369,7 +330,6 @@ class Interface:
         self.page.snack_bar.open = True
         return await self.page.update_async()
 
-
     async def cancel_ongoing_extraction(self, _):
         self.cancel_extraction = True
 
@@ -377,16 +337,34 @@ class Interface:
         for row in self.directory_list.rows:
             row.selected = True
         self.extract_selected_button.disabled = False
-        selected_size = sum([f["size"] for r in self.directory_list.rows for f in await r.data.files_list if r.selected])
-        self.extract_selected_button.text = f"Extract Selected [{naturalsize(selected_size, gnu=True)}]"
+        selected_size = sum(
+            [
+                f["size"]
+                for r in self.directory_list.rows
+                for f in await r.data.files_list
+                if r.selected
+            ]
+        )
+        self.extract_selected_button.text = (
+            f"Extract Selected [{naturalsize(selected_size, gnu=True)}]"
+        )
         await self.page.update_async()
 
     async def unselect_all(self, _):
         for row in self.directory_list.rows:
             row.selected = False
         self.extract_selected_button.disabled = True
-        selected_size = sum([f["size"] for r in self.directory_list.rows for f in await r.data.files_list if r.selected])
-        self.extract_selected_button.text = f"Extract Selected [{naturalsize(selected_size, gnu=True)}]"
+        selected_size = sum(
+            [
+                f["size"]
+                for r in self.directory_list.rows
+                for f in await r.data.files_list
+                if r.selected
+            ]
+        )
+        self.extract_selected_button.text = (
+            f"Extract Selected [{naturalsize(selected_size, gnu=True)}]"
+        )
         await self.page.update_async()
 
     @throttle
@@ -404,7 +382,9 @@ class Interface:
         self.main.disabled = True
         await self.page.update_async()
         await asyncio.sleep(0.5)
-        self.directory_list.rows.sort(key=lambda x: x.data.path, reverse=not event.ascending)
+        self.directory_list.rows.sort(
+            key=lambda x: x.data.path, reverse=not event.ascending
+        )
         self.directory_list.sort_ascending = event.ascending
         self.directory_list.sort_column_index = event.column_index
         self.main.disabled = False
@@ -415,8 +395,7 @@ class Interface:
         await self.page.update_async()
         await asyncio.sleep(0.5)
         self.directory_list.rows.sort(
-            key=lambda x: x.cells[2].data,
-            reverse=not event.ascending
+            key=lambda x: x.cells[2].data, reverse=not event.ascending
         )
         self.directory_list.sort_ascending = event.ascending
         self.directory_list.sort_column_index = event.column_index
@@ -429,7 +408,7 @@ class Interface:
         await asyncio.sleep(0.5)
         self.directory_list.rows.sort(
             key=lambda x: int(x.cells[event.column_index].content.value),
-            reverse=not event.ascending
+            reverse=not event.ascending,
         )
         self.directory_list.sort_ascending = event.ascending
         self.directory_list.sort_column_index = event.column_index
@@ -441,7 +420,9 @@ class Interface:
         self.page.overlay.append(file_picker)
         await self.page.update_async()
         await file_picker.get_directory_path_async(
-            initial_directory=str(Path(getattr(self.locations, event.control.data)).parent)
+            initial_directory=str(
+                Path(getattr(self.locations, event.control.data)).parent
+            )
         )
 
     async def set_directory(self, event):
@@ -459,16 +440,22 @@ class Interface:
                 "prefabs",
                 "shadersunified",
                 "textures",
-                "ui"
+                "ui",
             ]
             for directory in known_directories:
                 if not Path(event.path).joinpath(directory).exists():
-                    self.page.snack_bar.content.value = "Please select a valid trove directory"
+                    self.page.snack_bar.content.value = (
+                        "Please select a valid trove directory"
+                    )
                     self.page.snack_bar.bgcolor = "red"
                     self.page.snack_bar.open = True
                     return await self.page.update_async()
             trove_path = Path(event.path)
-            self.directory_dropdown.value = trove_path if trove_path in [x[1] for x in self.trove_locations] else "none"
+            self.directory_dropdown.value = (
+                trove_path
+                if trove_path in [x[1] for x in self.trove_locations]
+                else "none"
+            )
         if event.control.data in ["extract_from", "changes_from"]:
             self.directory_list.rows.clear()
             self.files_list.rows.clear()
@@ -526,12 +513,33 @@ class Interface:
         selected_indexes = [r.data for r in self.directory_list.rows if r.selected]
         changes = [f for f in self.changed_files if f.archive.index in selected_indexes]
         changes_size = sum([f.size for f in changes])
-        selected_size = sum([f["size"] for r in self.directory_list.rows for f in await r.data.files_list if r.selected])
-        all_size = sum([f["size"] for r in self.directory_list.rows for f in await r.data.files_list])
-        self.extract_changes_button.text = f"Extract Changes [{naturalsize(changes_size, gnu=True)}]"
-        self.extract_selected_button.text = f"Extract Selected [{naturalsize(selected_size, gnu=True)}]"
-        self.extract_all_button.text = f"Extract All [{naturalsize(all_size, gnu=True)}]"
-        self.extract_selected_button.disabled = not bool([r for r in self.directory_list.rows if r.selected])
+        selected_size = sum(
+            [
+                f["size"]
+                for r in self.directory_list.rows
+                for f in await r.data.files_list
+                if r.selected
+            ]
+        )
+        all_size = sum(
+            [
+                f["size"]
+                for r in self.directory_list.rows
+                for f in await r.data.files_list
+            ]
+        )
+        self.extract_changes_button.text = (
+            f"Extract Changes [{naturalsize(changes_size, gnu=True)}]"
+        )
+        self.extract_selected_button.text = (
+            f"Extract Selected [{naturalsize(selected_size, gnu=True)}]"
+        )
+        self.extract_all_button.text = (
+            f"Extract All [{naturalsize(all_size, gnu=True)}]"
+        )
+        self.extract_selected_button.disabled = not bool(
+            [r for r in self.directory_list.rows if r.selected]
+        )
         await self.page.update_async()
 
     async def refresh_directories(self, _):
@@ -565,39 +573,60 @@ class Interface:
             self.changed_files = []
             indexes = []
             i = 0
-            async for index in find_all_indexes(self.locations.extract_from, self.hashes, False):
+            async for index in find_all_indexes(
+                self.locations.extract_from, self.hashes, False
+            ):
                 indexes.append([index, len(await index.files_list), 0])
             if with_changes:
                 total_files = sum([index[1] for index in indexes])
                 progress = 0
                 start = perf_counter()
                 for index, files_count, _ in indexes:
-                    index_hash = self.hashes.get(str(index.path.relative_to(self.locations.extract_from)))
+                    index_hash = self.hashes.get(
+                        str(index.path.relative_to(self.locations.extract_from))
+                    )
                     if index_hash is None or (await index.content_hash) != index_hash:
                         for archive in index.archives:
-                            archive_hash = self.hashes.get(archive.path.relative_to(self.locations.extract_from))
-                            if archive_hash is None or (await archive.content_hash) != archive_hash:
+                            archive_hash = self.hashes.get(
+                                archive.path.relative_to(self.locations.extract_from)
+                            )
+                            if (
+                                archive_hash is None
+                                or (await archive.content_hash) != archive_hash
+                            ):
                                 async for file in archive.files():
                                     i += 1
-                                    if progress < (new_progress := round(i / total_files * 1000) / 1000):
-                                        elapsed = (perf_counter() - start)
-                                        remaining = round(elapsed * (total_files / i - 1))
-                                        self.directory_progress.controls[0].controls[1].value = f"[{round(i / total_files * 100, 1)}%] | Elapsed: {round(elapsed):>3}s | Estimated {remaining:>3}s remaining\r"
+                                    if progress < (
+                                        new_progress := round(i / total_files * 1000)
+                                        / 1000
+                                    ):
+                                        elapsed = perf_counter() - start
+                                        remaining = round(
+                                            elapsed * (total_files / i - 1)
+                                        )
+                                        self.directory_progress.controls[0].controls[
+                                            1
+                                        ].value = f"[{round(i / total_files * 100, 1)}%] | Elapsed: {round(elapsed):>3}s | Estimated {remaining:>3}s remaining\r"
                                         progress = new_progress
-                                        self.directory_progress.controls[1].value = new_progress
+                                        self.directory_progress.controls[
+                                            1
+                                        ].value = new_progress
                                         await self.directory_progress.update_async()
                                     if (
-                                        (
-                                            await file.compare(
-                                                self.locations.extract_from,
-                                                self.locations.changes_from
-                                            )
+                                        await file.compare(
+                                            self.locations.extract_from,
+                                            self.locations.changes_from,
                                         )
-                                        in [FileStatus.added, FileStatus.changed]
-                                    ):
+                                    ) in [FileStatus.added, FileStatus.changed]:
                                         self.changed_files.append(file)
                             else:
-                                i += len([f for f in archive.index.files_list() if int(f["archive_index"]) == archive.id])
+                                i += len(
+                                    [
+                                        f
+                                        for f in archive.index.files_list()
+                                        if int(f["archive_index"]) == archive.id
+                                    ]
+                                )
                     else:
                         i += files_count
             if self.changed_files:
@@ -618,26 +647,35 @@ class Interface:
                         cells=[
                             DataCell(
                                 Text(
-                                    str(index.directory.relative_to(self.locations.extract_from)),
+                                    str(
+                                        index.directory.relative_to(
+                                            self.locations.extract_from
+                                        )
+                                    ),
                                     color="green" if changes_count else None,
-                                    size=12
+                                    size=12,
                                 )
                             ),
                             DataCell(
                                 Text(
-                                    naturalsize(sum([f["size"] for f in await index.files_list]), gnu=True),
+                                    naturalsize(
+                                        sum(
+                                            [f["size"] for f in await index.files_list]
+                                        ),
+                                        gnu=True,
+                                    ),
                                     color="green" if changes_count else None,
-                                    size=12
+                                    size=12,
                                 ),
-                                data=sum([f["size"] for f in await index.files_list])
+                                data=sum([f["size"] for f in await index.files_list]),
                             ),
                             DataCell(
                                 Text(
                                     changes_count,
                                     color="green" if changes_count else None,
-                                    size=12
+                                    size=12,
                                 )
-                            )
+                            ),
                         ],
                         selected=bool(changes_count),
                         on_select_changed=self.directory_selection,
@@ -647,8 +685,10 @@ class Interface:
                 self.files_list.rows.append(
                     DataRow(
                         cells=[
-                            DataCell(Text("Too many changes to be displayed.", color="red")),
-                            DataCell(Text(""))
+                            DataCell(
+                                Text("Too many changes to be displayed.", color="red")
+                            ),
+                            DataCell(Text("")),
                         ]
                     )
                 )
@@ -657,7 +697,7 @@ class Interface:
                     DataRow(
                         cells=[
                             DataCell(Text("No changes were queried.")),
-                            DataCell(Text(""))
+                            DataCell(Text("")),
                         ]
                     )
                 )
@@ -667,7 +707,7 @@ class Interface:
                     DataRow(
                         cells=[
                             DataCell(Text("No changed files found.")),
-                            DataCell(Text(""))
+                            DataCell(Text("")),
                         ]
                     )
                 )
@@ -680,34 +720,61 @@ class Interface:
                             cells=[
                                 DataCell(
                                     Text(
-                                        file.path.relative_to(self.locations.extract_from),
+                                        file.path.relative_to(
+                                            self.locations.extract_from
+                                        ),
                                         color=file.color,
-                                        size=12
+                                        size=12,
                                     )
                                 ),
                                 DataCell(
                                     Text(
                                         naturalsize(file.size, gnu=True),
                                         color=file.color,
-                                        size=12
+                                        size=12,
                                     )
-                                )
-                            ]
+                                ),
+                            ],
                         )
                     )
                 self.extract_changes_button.disabled = False
             selected_indexes = [r.data for r in self.directory_list.rows if r.selected]
-            changes = [f for f in self.changed_files if f.archive.index in selected_indexes]
+            changes = [
+                f for f in self.changed_files if f.archive.index in selected_indexes
+            ]
             changes_size = sum([f.size for f in changes])
-            selected_size = sum([f["size"] for r in self.directory_list.rows for f in await r.data.files_list if r.selected])
-            all_size = sum([f["size"] for r in self.directory_list.rows for f in await r.data.files_list])
-            self.extract_changes_button.text = f"Extract Changes [{naturalsize(changes_size, gnu=True)}]"
-            self.extract_selected_button.text = f"Extract Selected [{naturalsize(selected_size, gnu=True)}]"
-            self.extract_all_button.text = f"Extract All [{naturalsize(all_size, gnu=True)}]"
-            self.metrics.controls[0].controls[1].value = naturalsize(sum([f.size for f in self.changed_files]), gnu=True)
+            selected_size = sum(
+                [
+                    f["size"]
+                    for r in self.directory_list.rows
+                    for f in await r.data.files_list
+                    if r.selected
+                ]
+            )
+            all_size = sum(
+                [
+                    f["size"]
+                    for r in self.directory_list.rows
+                    for f in await r.data.files_list
+                ]
+            )
+            self.extract_changes_button.text = (
+                f"Extract Changes [{naturalsize(changes_size, gnu=True)}]"
+            )
+            self.extract_selected_button.text = (
+                f"Extract Selected [{naturalsize(selected_size, gnu=True)}]"
+            )
+            self.extract_all_button.text = (
+                f"Extract All [{naturalsize(all_size, gnu=True)}]"
+            )
+            self.metrics.controls[0].controls[1].value = naturalsize(
+                sum([f.size for f in self.changed_files]), gnu=True
+            )
             self.directory_progress.controls[0].controls[1].value = ""
             self.directory_progress.controls[1].value = 0
-            self.extract_selected_button.disabled = not bool([r for r in self.directory_list.rows if r.selected])
+            self.extract_selected_button.disabled = not bool(
+                [r for r in self.directory_list.rows if r.selected]
+            )
             self.select_all_button.disabled = False
             self.unselect_all_button.disabled = False
             self.extract_all_button.disabled = False
@@ -724,7 +791,7 @@ class Interface:
         task_lines = [
             "Advanced mode allows for people to have old vs new changed files in a separate directory",
             "This will provide a better way to compare updates whilst having no real hustle to separate these changes",
-            "Eliminating the need of 1gb folders for each update and keeping it streamlined to the true changes"
+            "Eliminating the need of 1gb folders for each update and keeping it streamlined to the true changes",
         ]
         task = "\n\n".join(task_lines)
         dlg = AlertDialog(
@@ -733,7 +800,7 @@ class Interface:
             content=Text(task),
             actions=[
                 ElevatedButton("Don't show again", on_click=self.am_dont_show),
-                ElevatedButton("Ok", on_click=self.close_dlg)
+                ElevatedButton("Ok", on_click=self.close_dlg),
             ],
             actions_alignment=MainAxisAlignment.END,
         )
@@ -752,7 +819,7 @@ class Interface:
             "If you plan on using any other extraction method however, be weary of the issues this cache may present "
             "to the accuracy of change tracking."
             "Even out of performance mode, this app will most likely manage faster speeds than other methods (I know "
-            "of)."
+            "of).",
         ]
         task = "\n\n".join(task_lines)
         dlg = AlertDialog(
@@ -761,7 +828,7 @@ class Interface:
             content=Text(task),
             actions=[
                 ElevatedButton("Don't show again", on_click=self.pm_dont_show),
-                ElevatedButton("Ok", on_click=self.close_dlg)
+                ElevatedButton("Ok", on_click=self.close_dlg),
             ],
             actions_alignment=MainAxisAlignment.END,
         )
@@ -795,7 +862,9 @@ class Interface:
             content=Text(task),
             actions=[
                 ElevatedButton("Cancel", on_click=self.close_dlg),
-                ElevatedButton("Confirm extraction", data=extraction_type, on_click=self.extract),
+                ElevatedButton(
+                    "Confirm extraction", data=extraction_type, on_click=self.extract
+                ),
             ],
             actions_alignment=MainAxisAlignment.END,
         )
@@ -823,8 +892,7 @@ class Interface:
                 dated_folder = self.locations.changes_to.joinpath(
                     datetime.now().strftime(
                         self.page.preferences.changes_name_format.replace(
-                            "$dir",
-                            self.locations.extract_from.name
+                            "$dir", self.locations.extract_from.name
                         ).strip()
                     )
                 )
@@ -837,33 +905,58 @@ class Interface:
                 with open(old_changes.joinpath("hashes.json"), "w+") as f:
                     f.write(json.dumps(self.hashes, indent=4))
             selected_indexes = [r.data for r in self.directory_list.rows if r.selected]
-            changes = [f for f in self.changed_files if f.archive.index in selected_indexes]
+            changes = [
+                f for f in self.changed_files if f.archive.index in selected_indexes
+            ]
             selected_archives = [f.archive for f in changes]
             total = len(changes)
             start = perf_counter()
             for i, file in enumerate(changes, 1):
                 old_pro = self.extraction_progress.controls[1].controls[0].value
                 i += 1
-                if old_pro != (progress := round(i/total*1000)/1000):
+                if old_pro != (progress := round(i / total * 1000) / 1000):
                     elapsed = perf_counter() - start
                     remaining = round(elapsed * (total / i - 1))
-                    self.extraction_progress.controls[0].controls[0].value = f"[{round(i / total * 100, 1)}%] | Elapsed: {round(elapsed):>3}s | Estimated {remaining:>3}s remaining | Extracting {event.control.data}:\r"
+                    self.extraction_progress.controls[0].controls[
+                        0
+                    ].value = f"[{round(i / total * 100, 1)}%] | Elapsed: {round(elapsed):>3}s | Estimated {remaining:>3}s remaining | Extracting {event.control.data}:\r"
                     self.extraction_progress.controls[0].controls[1].value = file.name
                     self.extraction_progress.controls[1].controls[0].value = progress
                     await self.extraction_progress.update_async()
                 if self.page.preferences.advanced_mode:
                     # Keep an old copy for comparisons
-                    await file.copy_old(self.locations.extract_from, self.locations.changes_from, old_changes)
+                    await file.copy_old(
+                        self.locations.extract_from,
+                        self.locations.changes_from,
+                        old_changes,
+                    )
                     # Add changes
                     await file.save(self.locations.extract_from, new_changes)
                 # Save into extracted location
                 await file.save(self.locations.extract_from, self.locations.extract_to)
-                index_relative_path = file.archive.index.path.relative_to(self.locations.extract_from)
-                archive_relative_path = file.archive.path.relative_to(self.locations.extract_from)
-                self.hashes[str(index_relative_path)] = await file.archive.index.content_hash
-                self.hashes[str(archive_relative_path)] = await file.archive.content_hash
+                index_relative_path = file.archive.index.path.relative_to(
+                    self.locations.extract_from
+                )
+                archive_relative_path = file.archive.path.relative_to(
+                    self.locations.extract_from
+                )
+                self.hashes[
+                    str(index_relative_path)
+                ] = await file.archive.index.content_hash
+                self.hashes[
+                    str(archive_relative_path)
+                ] = await file.archive.content_hash
             wrote = sum([f.size for f in changes])
-            saved = sum([f["size"] for r in self.directory_list.rows for f in await r.data.files_list]) - wrote
+            saved = (
+                sum(
+                    [
+                        f["size"]
+                        for r in self.directory_list.rows
+                        for f in await r.data.files_list
+                    ]
+                )
+                - wrote
+            )
             metadata = {
                 "Extracted From": str(self.locations.extract_from),
                 "Extracted To": str(self.locations.extract_to),
@@ -879,20 +972,23 @@ class Interface:
                     "Type": "Changes",
                     "Indexes": sorted(
                         [
-                            str(index.path.relative_to(self.locations.extract_from)) for index in selected_indexes
+                            str(index.path.relative_to(self.locations.extract_from))
+                            for index in selected_indexes
                         ]
                     ),
                     "Archives": (
                         [
-                            str(archive.path.relative_to(self.locations.extract_from)) for archive in selected_archives
+                            str(archive.path.relative_to(self.locations.extract_from))
+                            for archive in selected_archives
                         ]
                     ),
                     "Files": (
                         [
-                            str(f.path.relative_to(self.locations.extract_from)) for f in changes
+                            str(f.path.relative_to(self.locations.extract_from))
+                            for f in changes
                         ]
-                    )
-                }
+                    ),
+                },
             }
             with open(new_changes.joinpath("metadata.yml"), "w+") as f:
                 dump(metadata, f, sort_keys=False)
@@ -907,15 +1003,21 @@ class Interface:
             i = 0
             start = perf_counter()
             for index in indexes:
-                index_relative_path = index.path.relative_to(self.locations.extract_from)
+                index_relative_path = index.path.relative_to(
+                    self.locations.extract_from
+                )
                 self.hashes[str(index_relative_path)] = await index.content_hash
                 for archive in index.archives:
-                    archive_relative_path = archive.path.relative_to(self.locations.extract_from)
+                    archive_relative_path = archive.path.relative_to(
+                        self.locations.extract_from
+                    )
                     self.hashes[str(archive_relative_path)] = await archive.content_hash
                     async for file in archive.files():
                         if self.cancel_extraction:
                             self.cancel_extraction = False
-                            self.extraction_progress.controls[0].controls[0].value = "Extractor Idle"
+                            self.extraction_progress.controls[0].controls[
+                                0
+                            ].value = "Extractor Idle"
                             self.extraction_progress.controls[0].controls[1].value = ""
                             self.extraction_progress.controls[1].controls[0].value = 0
                             self.page.snack_bar.content.value = "Extraction Cancelled"
@@ -924,14 +1026,24 @@ class Interface:
                             return await self.page.update_async()
                         old_pro = self.extraction_progress.controls[1].controls[0].value
                         i += 1
-                        if old_pro != (progress := round(i/number_of_files*1000)/1000):
-                            elapsed = (perf_counter() - start)
+                        if old_pro != (
+                            progress := round(i / number_of_files * 1000) / 1000
+                        ):
+                            elapsed = perf_counter() - start
                             remaining = round(elapsed * (number_of_files / i - 1))
-                            self.extraction_progress.controls[0].controls[0].value = f"[{round(i / number_of_files * 100, 1)}%] | Elapsed: {round(elapsed):>3}s | Estimated {remaining:>3}s remaining | Extracting {event.control.data}:\r"
-                            self.extraction_progress.controls[0].controls[1].value = file.name
-                            self.extraction_progress.controls[1].controls[0].value = progress
+                            self.extraction_progress.controls[0].controls[
+                                0
+                            ].value = f"[{round(i / number_of_files * 100, 1)}%] | Elapsed: {round(elapsed):>3}s | Estimated {remaining:>3}s remaining | Extracting {event.control.data}:\r"
+                            self.extraction_progress.controls[0].controls[
+                                1
+                            ].value = file.name
+                            self.extraction_progress.controls[1].controls[
+                                0
+                            ].value = progress
                             await self.extraction_progress.update_async()
-                        await file.save(self.locations.extract_from, self.locations.extract_to)
+                        await file.save(
+                            self.locations.extract_from, self.locations.extract_to
+                        )
         hashes_path = self.locations.extract_from.joinpath("hashes.json")
         hashes_path.write_text(json.dumps(self.hashes, indent=4))
         self.main_controls.disabled = False

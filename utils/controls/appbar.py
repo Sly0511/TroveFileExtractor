@@ -12,17 +12,10 @@ from flet import (
     TextButton,
     MainAxisAlignment,
     Icon,
-    Theme
+    Theme,
 )
 from flet_core.colors import SURFACE_VARIANT
-from flet_core.icons import (
-    LIGHT_MODE,
-    DARK_MODE,
-    HOME,
-    BUG_REPORT,
-    HELP,
-    PALETTE
-)
+from flet_core.icons import LIGHT_MODE, DARK_MODE, HOME, BUG_REPORT, HELP, PALETTE
 from utils.preferences import AccentColor
 
 
@@ -48,11 +41,18 @@ class TFAExtractionAppBar(AppBar):
                             data=color,
                             content=Row(
                                 controls=[
-                                    Icon(PALETTE,color=color.value),
-                                    Text(value=" ".join([w.capitalize() for w in color.value.split("_")]))
+                                    Icon(PALETTE, color=color.value),
+                                    Text(
+                                        value=" ".join(
+                                            [
+                                                w.capitalize()
+                                                for w in color.value.split("_")
+                                            ]
+                                        )
+                                    ),
                                 ]
                             ),
-                            on_click=self.change_color
+                            on_click=self.change_color,
                         )
                         for color in AccentColor
                     ],

@@ -20,7 +20,7 @@ def GetKeys(key, path, look_for):
         try:
             subkey = winreg.EnumKey(key, i)
             if subkey.startswith(look_for):
-                yield path+subkey+"\\"
+                yield path + subkey + "\\"
         except WindowsError:
             break
         i += 1

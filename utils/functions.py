@@ -85,7 +85,7 @@ class TFArchive:
         self.path = file
         self.id = int(archive_id.search(file.stem).group(1))
         self.content = file.read_bytes()
-        #self.read_file_content()
+        # self.read_file_content()
 
     def __eq__(self, other):
         if not isinstance(other, TFIndex):
@@ -112,7 +112,7 @@ class TFArchive:
             if file.archive_index == int(self):
                 reader.seek(file.offset)
                 if file.size > 0:
-                    file.content = reader.read_byte=s(file.size)
+                    file.content = reader.read_byte = s(file.size)
                 else:
                     file.content = b""
 
@@ -155,7 +155,6 @@ class TFIndex:
         for tfa in FindTFA(self.directory):
             self.archives.append(TFArchive(self, tfa))
 
-
     def read_files(self):
         reader = BinaryReader(self.content)
         while reader.pos() < reader.size():
@@ -193,7 +192,7 @@ def ReadVarInt7Bit(buffer: BinaryReader, pos):
         buffer.seek(pos)
         b = buffer.read_bytes()
         for i, byte in enumerate(b):
-            result |= ((byte & 0x7f) << shift)
+            result |= (byte & 0x7F) << shift
             pos += 1
             if not (byte & 0x80):
                 result &= (1 << 32) - 1
@@ -201,7 +200,7 @@ def ReadVarInt7Bit(buffer: BinaryReader, pos):
                 return (result, pos)
             shift += 7
             if shift >= 64:
-                raise Exception('Too many bytes when decoding varint.')
+                raise Exception("Too many bytes when decoding varint.")
     return result
 
 
@@ -222,10 +221,7 @@ def throttle(actual_handler, data={}, delay=0.5):
 
         data["last_change"] = datetime.utcnow().timestamp()
         await asyncio.sleep(delay)
-        if (
-            datetime.utcnow().timestamp() - data["last_change"]
-            >= delay - delay * 0.1
-        ):
+        if datetime.utcnow().timestamp() - data["last_change"] >= delay - delay * 0.1:
             await actual_handler(*args, **kwargs)
 
     return wrapper
@@ -248,10 +244,7 @@ def long_throttle(actual_handler, data={}, delay=1.5):
 
         data["last_change"] = datetime.utcnow().timestamp()
         await asyncio.sleep(delay)
-        if (
-            datetime.utcnow().timestamp() - data["last_change"]
-            >= delay - delay * 0.1
-        ):
+        if datetime.utcnow().timestamp() - data["last_change"] >= delay - delay * 0.1:
             await actual_handler(*args, **kwargs)
 
     return wrapper

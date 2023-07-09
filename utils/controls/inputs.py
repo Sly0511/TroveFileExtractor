@@ -13,17 +13,19 @@ float_regex = re.compile("^-?\d+((?:\.|\,)\d*)?$")
 
 class AutoNumberField(TextField):
     def __init__(
-            self,
-            type=float,
-            min: Optional[Union[int, float]] = None,
-            max: Optional[Union[int, float]] = None,
-            step: Optional[int] = None,
-            **kwargs
+        self,
+        type=float,
+        min: Optional[Union[int, float]] = None,
+        max: Optional[Union[int, float]] = None,
+        step: Optional[int] = None,
+        **kwargs,
     ):
         super().__init__(**kwargs)
         self.ensured_type = type
-        number_value = kwargs.get('value', None)
-        self.number_value = self.ensured_type(number_value) if number_value is not None else None
+        number_value = kwargs.get("value", None)
+        self.number_value = (
+            self.ensured_type(number_value) if number_value is not None else None
+        )
         self.min = min
         self.max = max
         self.step = step
@@ -70,6 +72,7 @@ class AutoNumberField(TextField):
                 return await event.control.update_async()
             await event.control.update_async()
             await handler(event)
+
         self._add_event_handler("change", verify_value)
         if handler is not None:
             self._set_attr("onchange", True)
@@ -90,22 +93,25 @@ class AutoNumberField(TextField):
                 return await event.control.update_async()
             await event.control.update_async()
             await handler(event)
+
         self._add_event_handler("submit", verify_value)
 
 
 class NumberField(TextField):
     def __init__(
-            self,
-            type=float,
-            min: Optional[Union[int, float]] = None,
-            max: Optional[Union[int, float]] = None,
-            step: Optional[int] = None,
-            **kwargs
+        self,
+        type=float,
+        min: Optional[Union[int, float]] = None,
+        max: Optional[Union[int, float]] = None,
+        step: Optional[int] = None,
+        **kwargs,
     ):
         super().__init__(**kwargs)
         self.ensured_type = type
-        number_value = kwargs.get('value', None)
-        self.number_value = self.ensured_type(number_value) if number_value is not None else None
+        number_value = kwargs.get("value", None)
+        self.number_value = (
+            self.ensured_type(number_value) if number_value is not None else None
+        )
         self.min = min
         self.max = max
         self.step = step
@@ -147,6 +153,7 @@ class NumberField(TextField):
                 return await event.control.update_async()
             await event.control.update_async()
             await handler(event)
+
         self._add_event_handler("change", verify_value)
         if handler is not None:
             self._set_attr("onchange", True)
@@ -166,6 +173,7 @@ class NumberField(TextField):
                 return await event.control.update_async()
             await event.control.update_async()
             await handler(event)
+
         self._add_event_handler("submit", verify_value)
 
 
@@ -191,6 +199,7 @@ class PathField(TextField):
                 return await event.control.update_async()
             await event.control.update_async()
             await handler(event)
+
         self._add_event_handler("change", verify_value)
         if handler is not None:
             self._set_attr("onchange", True)
@@ -210,5 +219,5 @@ class PathField(TextField):
                 return await event.control.update_async()
             await event.control.update_async()
             await handler(event)
-        self._add_event_handler("submit", verify_value)
 
+        self._add_event_handler("submit", verify_value)

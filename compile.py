@@ -19,21 +19,19 @@ build_exe_options = {
     "include_files": [
         ("assets/", "assets/"),
         ("README.md", "README.md"),
-    ]
+    ],
+    "optimize": 2,
 }
 
 bdist_msi_options = {
-    'target_name': tech_name,
-    'upgrade_code': app_id,
-    'add_to_path': False,
-    'install_icon': icon,
-    'all_users': True,
+    "target_name": tech_name,
+    "upgrade_code": app_id,
+    "add_to_path": False,
+    "install_icon": icon,
+    "all_users": True,
 }
 
-options = {
-    'build_exe': build_exe_options,
-    'bdist_msi': bdist_msi_options
-}
+options = {"build_exe": build_exe_options, "bdist_msi": bdist_msi_options}
 
 setup(
     name=name,

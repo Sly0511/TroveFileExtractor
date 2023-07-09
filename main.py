@@ -26,10 +26,12 @@ class Extractor:
         targets = (
             logging.StreamHandler(sys.stdout),
             logging.FileHandler(latest_log),
-            logging.FileHandler(dated_log)
+            logging.FileHandler(dated_log),
         )
-        logging.basicConfig(format='%(message)s', level=logging.INFO, handlers=targets)
-        page.preferences = Preferences.load_from_json(app_data.joinpath("preferences.json"))
+        logging.basicConfig(format="%(message)s", level=logging.INFO, handlers=targets)
+        page.preferences = Preferences.load_from_json(
+            app_data.joinpath("preferences.json")
+        )
         page.title = "Trove File Archive Extractor 0.9.8-beta"
         page.theme_mode = page.preferences.theme
         page.theme = Theme(color_scheme_seed=str(page.preferences.accent_color))
