@@ -18,6 +18,7 @@ build_exe_options = {
     "include_files": [
         ("assets/", "assets/"),
         ("README.md", "README.md"),
+        ("LICENSE", "LICENSE"),
     ],
     "optimize": 2,
 }
