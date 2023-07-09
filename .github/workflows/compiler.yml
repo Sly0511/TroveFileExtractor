@@ -28,8 +28,14 @@ jobs:
           $env:FILE_NAME="TroveFileExtractor"
           $env:RELEASE_NAME="${{ github.event.release.name }}"
           $env:NEW_FILE_NAME="${env:FILE_NAME}_${env:RELEASE_NAME}-win64.msi"
+          ls
+          ls dist
           Move-Item "dist/TroveFileExtractor" ".\TroveFileExtractor"
+          ls
+          ls dist
           Rename-Item ".\TroveFileExtractor" "${env:NEW_FILE_NAME}"
+          ls
+          ls dist
 
       - name: Upload file to release
         uses: actions/upload-release-asset@v1
