@@ -31,9 +31,12 @@ jobs:
           Write-Host "NEW_FILE_NAME: ${env:NEW_FILE_NAME}"
           ls dist
           Move-Item "dist/TroveFileExtractor.msi" ".\${env: NEW_FILE_NAME}"
+          ls
 
-      - name: Create Github Release
-        uses: ncipollo/release-action@v1
+      - name: Upload file to release
+        uses: actions/upload-release-asset@v1
         with:
-          artifacts: ${{ env.NEW_FILE_NAME }}
-          token: ${{ secrets.COMPILER }}
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ${{ env.NEW_FILE_NAME }}
+          asset_name: ${{ env.NEW_FILE_NAME }}
+          asset_content_type: application/x-msi
