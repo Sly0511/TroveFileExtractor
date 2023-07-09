@@ -38,8 +38,8 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: "TroveFileExtractor_${{ github.event.release.name }}-win64.msi"
-          asset_name: "TroveFileExtractor_${{ github.event.release.name }}-win64.msi"
+          asset_path: "TroveFileExtractor-${{ github.event.release.name }}-win64.msi"
+          asset_name: "TroveFileExtractor-${{ github.event.release.name }}-win64.msi"
           asset_content_type: application/x-msi
         env:
           GITHUB_TOKEN: ${{ secrets.COMPILER }}
