@@ -971,22 +971,42 @@ class Interface:
                 "Extraction": {
                     "Type": "Changes",
                     "Indexes": sorted(
-                        [
-                            str(index.path.relative_to(self.locations.extract_from))
-                            for index in selected_indexes
-                        ]
+                        list(
+                            set(
+                                [
+                                    str(
+                                        index.path.relative_to(
+                                            self.locations.extract_from
+                                        )
+                                    )
+                                    for index in selected_indexes
+                                ]
+                            )
+                        )
                     ),
                     "Archives": (
-                        [
-                            str(archive.path.relative_to(self.locations.extract_from))
-                            for archive in selected_archives
-                        ]
+                        list(
+                            set(
+                                [
+                                    str(
+                                        archive.path.relative_to(
+                                            self.locations.extract_from
+                                        )
+                                    )
+                                    for archive in selected_archives
+                                ]
+                            )
+                        )
                     ),
                     "Files": (
-                        [
-                            str(f.path.relative_to(self.locations.extract_from))
-                            for f in changes
-                        ]
+                        list(
+                            set(
+                                [
+                                    str(f.path.relative_to(self.locations.extract_from))
+                                    for f in changes
+                                ]
+                            )
+                        )
                     ),
                 },
             }
