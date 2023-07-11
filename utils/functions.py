@@ -12,6 +12,7 @@ from typing import TypeVar, Literal, Generic, Callable, overload, Union
 
 from binary_reader import BinaryReader
 from pydantic import BaseModel
+from aiohttp import ClientSession
 
 
 archive_id = re.compile(r"^archive(\d+)")
@@ -112,7 +113,7 @@ class TFArchive:
             if file.archive_index == int(self):
                 reader.seek(file.offset)
                 if file.size > 0:
-                    file.content = reader.read_byte = s(file.size)
+                    file.content = reader.read_bytes(file.size)
                 else:
                     file.content = b""
 
@@ -248,3 +249,15 @@ def long_throttle(actual_handler, data={}, delay=1.5):
             await actual_handler(*args, **kwargs)
 
     return wrapper
+
+
+async def check_update(current_version):
+    async with ClientSession() as session:
+        async with session.get(
+            "https://api.github.com/repos/Sly0511/TroveFileExtractor/releases"
+        ) as response:
+            version_data = await response.json()
+            version = version_data[0]
+            if current_version != version.get("name"):
+                return version.get("html_url")
+    return None

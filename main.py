@@ -42,6 +42,7 @@ class Extractor:
         page.preferences = Preferences.load_from_json(
             app_data.joinpath("preferences.json")
         )
+        page.VERSION = VERSION
         page.title = f"Trove File Archive Extractor {VERSION}"
         page.theme_mode = page.preferences.theme
         page.theme = Theme(color_scheme_seed=str(page.preferences.accent_color))

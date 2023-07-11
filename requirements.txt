@@ -6,3 +6,4 @@ vdf
 aiofiles
 PyYAML
 cx-Freeze
+aiohttp

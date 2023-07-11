@@ -15,8 +15,18 @@ from flet import (
     Theme,
 )
 from flet_core.colors import SURFACE_VARIANT
-from flet_core.icons import LIGHT_MODE, DARK_MODE, HOME, BUG_REPORT, HELP, PALETTE
+from flet_core.icons import (
+    LIGHT_MODE,
+    DARK_MODE,
+    HOME,
+    BUG_REPORT,
+    HELP,
+    PALETTE,
+    DOWNLOAD,
+)
 from utils.preferences import AccentColor
+from utils.functions import check_update
+import asyncio
 
 
 class TFAExtractionAppBar(AppBar):
@@ -24,10 +34,14 @@ class TFAExtractionAppBar(AppBar):
         self.page = kwargs["page"]
         del kwargs["page"]
         actions = []
-        if self.page.route != "/":
-            actions.append(IconButton(icon=HOME, on_click=self.change_home))
         actions.extend(
             [
+                IconButton(
+                    icon=DOWNLOAD,
+                    on_click=self.go_to_update_page,
+                    visible=False,
+                    tooltip="A newer version is available.",
+                ),
                 IconButton(
                     data="theme_switcher",
                     icon=DARK_MODE if self.page.theme_mode == "LIGHT" else LIGHT_MODE,
@@ -130,6 +144,18 @@ class TFAExtractionAppBar(AppBar):
             center_title=True,
             **kwargs,
         )
+        asyncio.create_task(self.check_for_update())
+
+    async def check_for_update(self):
+        if (await check_update(self.page.VERSION)) is not None:
+            self.page.appbar.actions[0].visible = True
+            self.page.snack_bar.content.value = "A new update is available"
+            self.page.snack_bar.bgcolor = "yellow"
+            self.page.snack_bar.open = True
+            await self.page.update_async()
+
+    async def go_to_update_page(self, _):
+        await self.page.launch_url_async(await check_update(self.page.VERSION))
 
     async def change_theme(self, _):
         self.page.theme_mode = "light" if self.page.theme_mode == "dark" else "dark"
