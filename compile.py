@@ -1,14 +1,5 @@
 from cx_Freeze import setup, Executable
-from main import (
-    AUTHOR,
-    NAME,
-    TECH_NAME,
-    VERSION,
-    DESCRIPTION,
-    ICON,
-    COPYRIGHT,
-    APP_ID
-)
+from main import AUTHOR, NAME, TECH_NAME, VERSION, DESCRIPTION, ICON, COPYRIGHT, APP_ID
 
 build_exe_options = {
     "excludes": [
@@ -21,6 +12,7 @@ build_exe_options = {
         ("LICENSE", "LICENSE"),
     ],
     "optimize": 2,
+    "include_msvcr": True,
 }
 
 bdist_msi_options = {
