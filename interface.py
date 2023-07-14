@@ -420,9 +420,9 @@ class Interface:
         self.page.overlay.append(file_picker)
         await self.page.update_async()
         await file_picker.get_directory_path_async(
-            initial_directory=str(
-                Path(getattr(self.locations, event.control.data)).parent
-            )
+            # initial_directory=str(
+            #     Path(getattr(self.locations, event.control.data)).parent
+            # )
         )
 
     async def set_directory(self, event):
@@ -564,7 +564,7 @@ class Interface:
             await asyncio.sleep(0.5)
             self.hashes = dict()
             if self.page.preferences.performance_mode:
-                hashes_path = self.locations.extract_from.joinpath("hashes.json")
+                hashes_path = self.locations.extract_to.joinpath("hashes.json")
                 if hashes_path.exists():
                     try:
                         self.hashes = json.loads(hashes_path.read_text())
@@ -1064,7 +1064,7 @@ class Interface:
                         await file.save(
                             self.locations.extract_from, self.locations.extract_to
                         )
-        hashes_path = self.locations.extract_from.joinpath("hashes.json")
+        hashes_path = self.locations.extract_to.joinpath("hashes.json")
         hashes_path.write_text(json.dumps(self.hashes, indent=4))
         self.main_controls.disabled = False
         self.cancel_extraction_button.visible = False

@@ -14,7 +14,7 @@ from utils.preferences import Preferences
 AUTHOR = "sly.dev"
 NAME = "Trove File Extractor"
 TECH_NAME = "TroveFileExtractor"
-VERSION = "1.0.3"
+VERSION = "1.0.4"
 DESCRIPTION = "A tool for extraction of Trove Archive files"
 ICON = "assets/favicon.ico"
 COPYRIGHT = "2023-Present"
